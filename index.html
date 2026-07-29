@@ -462,7 +462,6 @@
         .cat-chip button { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem; padding: 0; transition: transform 0.2s; }
         .cat-chip button:hover { transform: scale(1.2); }
 
-        /* Utility classes for analytical sheet compatibility */
         .text-end { text-align: right !important; }
         .text-center { text-align: center !important; }
         .text-success { color: var(--success) !important; }
@@ -475,8 +474,6 @@
         .table-bordered th, .table-bordered td { border: 1px solid var(--card-border) !important; }
         .table-hover tbody tr:hover { background-color: rgba(255, 255, 255, 0.04) !important; }
         .table-light { background-color: rgba(255, 255, 255, 0.05) !important; color: var(--text-main); }
-        .bg-success { background-color: rgba(16, 185, 129, 0.2) !important; color: var(--success) !important; border: 1px solid rgba(16, 185, 129, 0.4); }
-        .bg-warning { background-color: rgba(245, 158, 11, 0.2) !important; color: var(--warning) !important; border: 1px solid rgba(245, 158, 11, 0.4); }
         .py-3 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
         .mb-0 { margin-bottom: 0 !important; }
     </style>
@@ -691,7 +688,6 @@
                 </div>
             </div>
 
-            <!-- EXTRATO COM SELETOR DE VISUALIZAÇÃO EXPANDIDO E ARRASTAR (DRAG & DROP) -->
             <div class="card" data-card-id="extratoLancamentos" style="margin-bottom: 0;">
                 <div class="card-header" style="flex-direction: column; align-items: stretch; gap: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;" id="headerExtrato">
@@ -716,7 +712,6 @@
                     </div>
                 </div>
 
-                <!-- Onde o Extrato será renderizado dinamicamente -->
                 <div id="containerExtrato"></div>
             </div>
 
@@ -724,7 +719,6 @@
     </div>
 
     <div id="tabConfig" class="tab-content">
-        <!-- Configuração GitHub Gist -->
         <div class="card" style="margin-bottom: 24px; border-top: 3px solid var(--primary);">
             <h2>🐙 Sincronização Automática via GitHub Gist</h2>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin: 10px 0 20px 0;">
@@ -780,15 +774,14 @@
     </div>
 
     <script>
-        // Recupera as credenciais salvas localmente no navegador
+        // Credenciais do GitHub Gist incorporadas diretamente no código-fonte[cite: 3]
         function getGithubConfig() {
             return {
-                token: localStorage.getItem('gh_token'),
-                gistId: localStorage.getItem('gh_gist_id')
+                token: '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',
+                gistId: 'fb2fa3612b76c7b2e0ff46c595a17503'
             };
         }
 
-        // 1. Carregar os dados do Gist ao abrir a página
         async function carregarDadosDoGist() {
             const { token, gistId } = getGithubConfig();
             if (!token || !gistId) {
@@ -819,7 +812,6 @@
             }
         }
 
-        // 2. Salvar/Atualizar os dados no Gist sempre que houver modificação
         async function salvarDadosNoGist(dadosObjeto) {
             const { token, gistId } = getGithubConfig();
             if (!token || !gistId) {
@@ -923,8 +915,8 @@
         }
 
         function carregarConfigGhUI() {
-            const token = localStorage.getItem('gh_token') || '';
-            const gistId = localStorage.getItem('gh_gist_id') || '';
+            const token = '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';
+            const gistId = 'fb2fa3612b76c7b2e0ff46c595a17503';
             const elToken = document.getElementById('inputGhToken');
             const elGist = document.getElementById('inputGhGistId');
             if (elToken) elToken.value = token;
@@ -1541,8 +1533,6 @@
             });
         }
 
-        // Função de Planilha Analítica com fluxo organizado na coluna E:
-        // 1. Entradas | 2. Assinaturas de despesas | 3. Aluguel | 4. Restante
         function renderPlanilhaAnalitica(lancamentos) {
             const container = document.getElementById('containerExtrato');
             if (!container) return;
@@ -1685,7 +1675,7 @@
                                     <span class="editable-cell tag-pag ${item.pagamento === 'Pix' ? 'tag-pix' : 'tag-cartao'}" onclick="editarCelulaInline(${item.id}, 'pagamento', event)">${item.pagamento}</span>
                                 </div>
                                 <div class="editable-cell" onclick="editarCelulaInline(${item.id}, 'valor', event)" style="font-size: 1.15rem; font-weight: 800; color: ${item.tipo === 'receita' ? 'var(--success)' : 'var(--danger)'};">
-                                    R$ ${item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    R$ ${item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                             </div>
                         </div>
@@ -1695,35 +1685,35 @@
                 container.innerHTML = htmlCards;
             } else if (modoExibicaoExtrato === 'tabela') {
                 let htmlTabela = `
-                    <div class="table-responsive" style="margin-top: 16px;">
+                    <div class="table-responsive">
                         <table>
                             <thead>
                                 <tr>
                                     <th class="sortable" onclick="ordenarExtrato('data')">Data ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('desc')">Descrição (Item) ↕</th>
+                                    <th class="sortable" onclick="ordenarExtrato('desc')">Descrição ↕</th>
                                     <th class="sortable" onclick="ordenarExtrato('categoria')">Categoria ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('pagamento')">Pagamento ↕</th>
                                     <th class="sortable" onclick="ordenarExtrato('tipo')">Tipo ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('valor')">Valor ↕</th>
-                                    <th>Ação</th>
+                                    <th class="sortable" onclick="ordenarExtrato('pagamento')">Pagamento ↕</th>
+                                    <th class="sortable text-end" onclick="ordenarExtrato('valor')">Valor ↕</th>
+                                    <th style="text-align: center;">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
                 `;
                 dadosExtrato.forEach(item => {
-                    let tagCatExtra = item.categoria === 'Investimentos' ? 'style="background: rgba(6, 182, 212, 0.15); color: var(--pix-color); border: 1px solid rgba(6, 182, 212, 0.3); padding: 3px 8px; border-radius: 6px; font-weight: 600;"' : '';
+                    const valFmt = item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     htmlTabela += `
-                        <tr data-item-id="${item.id}" draggable="true" title="Arraste para mover">
+                        <tr data-item-id="${item.id}" draggable="true">
                             <td>${nomesMeses[item.mes].slice(0,3)}/${item.ano}</td>
                             <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'desc', event)"><strong>${item.desc}</strong></td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'categoria', event)"><span ${tagCatExtra}>${item.categoria}</span></td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'pagamento', event)"><span class="tag-pag ${item.pagamento === 'Pix' ? 'tag-pix' : 'tag-cartao'}">${item.pagamento}</span></td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'tipo', event)"><span class="tag-tipo ${item.tipo === 'receita' ? 'tag-receita' : 'tag-despesa'}">${item.tipo.toUpperCase()}</span></td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'valor', event)" style="font-weight: bold;">R$ ${item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td>
-                                <button onclick="duplicarItem(${item.id})" class="btn-duplicate">📄</button>
-                                <button onclick="editarItem(${item.id})" class="btn-edit">✏️</button>
-                                <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete">❌</button>
+                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'categoria', event)">${item.categoria}</td>
+                            <td class="editable-cell"><span class="tag-tipo ${item.tipo === 'receita' ? 'tag-receita' : 'tag-despesa'}" onclick="editarCelulaInline(${item.id}, 'tipo', event)">${item.tipo.toUpperCase()}</span></td>
+                            <td class="editable-cell"><span class="tag-pag ${item.pagamento === 'Pix' ? 'tag-pix' : 'tag-cartao'}" onclick="editarCelulaInline(${item.id}, 'pagamento', event)">${item.pagamento}</span></td>
+                            <td class="editable-cell text-end" style="font-weight:700; color: ${item.tipo === 'receita' ? 'var(--success)' : 'var(--danger)'}" onclick="editarCelulaInline(${item.id}, 'valor', event)">R$ ${valFmt}</td>
+                            <td style="text-align: center;">
+                                <button onclick="duplicarItem(${item.id})" class="btn-duplicate" title="Duplicar">📄</button>
+                                <button onclick="editarItem(${item.id})" class="btn-edit" title="Editar">✏️</button>
+                                <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete" title="Excluir">❌</button>
                             </td>
                         </tr>
                     `;
@@ -1731,81 +1721,48 @@
                 htmlTabela += '</tbody></table></div>';
                 container.innerHTML = htmlTabela;
             } else if (modoExibicaoExtrato === 'categorias') {
-                const grupos = {};
+                let catsMap = {};
                 dadosExtrato.forEach(item => {
-                    if (!grupos[item.categoria]) grupos[item.categoria] = [];
-                    grupos[item.categoria].push(item);
+                    if (!catsMap[item.categoria]) catsMap[item.categoria] = [];
+                    catsMap[item.categoria].push(item);
                 });
-                
-                const catKeys = Object.keys(grupos).sort();
-                let htmlCategorias = '<div style="display: flex; flex-direction: column; gap: 20px; margin-top: 16px;">';
-                
-                catKeys.forEach(cat => {
-                    const itensCat = grupos[cat];
-                    let totalCatRec = 0, totalCatDesp = 0;
-                    itensCat.forEach(i => {
-                        if (i.tipo === 'receita') totalCatRec += i.valor;
-                        else totalCatDesp += i.valor;
-                    });
-                    
-                    const saldoCat = totalCatRec - totalCatDesp;
-                    const corHeader = saldoCat >= 0 && totalCatRec > 0 ? 'var(--success)' : 'var(--danger)';
-                    const tagCatExtra = cat === 'Investimentos' ? 'border-color: var(--pix-color); color: var(--pix-color);' : '';
-
-                    htmlCategorias += `
-                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden;">
-                            <div style="background: rgba(255, 255, 255, 0.04); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-left: 4px solid ${corHeader};">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 1.05rem; font-weight: 800; color: var(--text-main); ${tagCatExtra}">📂 ${cat}</span>
-                                    <span class="badge" style="background: rgba(255,255,255,0.08); color: var(--text-muted); border: none;">${itensCat.length} ${itensCat.length === 1 ? 'item' : 'itens'}</span>
+                let htmlCat = '<div style="display: flex; flex-direction: column; gap: 20px;">';
+                for (let [cat, itensCat] of Object.entries(catsMap)) {
+                    let totalCat = itensCat.reduce((acc, i) => acc + (i.tipo === 'receita' ? i.valor : -i.valor), 0);
+                    htmlCat += `
+                        <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                                <h3 style="font-size: 1rem; color: var(--primary);">📂 ${cat} (${itensCat.length} itens)</h3>
+                                <span style="font-weight: 700; color: ${totalCat >= 0 ? 'var(--success)' : 'var(--danger)'};">Total: R$ ${Math.abs(totalCat).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                            <div class="extrato-grid">
+                    `;
+                    itensCat.forEach(item => {
+                        let valFmt = item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        htmlCat += `
+                            <div class="extrato-card" data-item-id="${item.id}" draggable="true">
+                                <div class="extrato-card-top">
+                                    <span>📅 ${nomesMeses[item.mes].slice(0,3)}/${item.ano}</span>
+                                    <div>
+                                        <button onclick="duplicarItem(${item.id})" class="btn-duplicate" title="Duplicar">📄</button>
+                                        <button onclick="editarItem(${item.id})" class="btn-edit" title="Editar">✏️</button>
+                                        <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete" title="Excluir">❌</button>
+                                    </div>
                                 </div>
-                                <div style="font-size: 1.05rem; font-weight: 800;">
-                                    ${totalCatRec > 0 ? `<span style="color:var(--success); font-size:0.9rem; margin-right:12px;">+ R$ ${totalCatRec.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>` : ''}
-                                    ${totalCatDesp > 0 ? `<span style="color:var(--danger); font-size:0.9rem;">- R$ ${totalCatDesp.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>` : ''}
+                                <div class="extrato-card-body">
+                                    <div style="font-size: 1rem; font-weight: 700; color: var(--text-main);">${item.desc}</div>
+                                </div>
+                                <div class="extrato-card-footer">
+                                    <span class="tag-tipo ${item.tipo === 'receita' ? 'tag-receita' : 'tag-despesa'}">${item.tipo.toUpperCase()}</span>
+                                    <span style="font-weight: 800; color: ${item.tipo === 'receita' ? 'var(--success)' : 'var(--danger)'};">R$ ${valFmt}</span>
                                 </div>
                             </div>
-                            <div class="table-responsive">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Data</th>
-                                            <th>Descrição</th>
-                                            <th>Pagamento</th>
-                                            <th>Tipo</th>
-                                            <th>Valor</th>
-                                            <th>Ação</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                    `;
-                    
-                    itensCat.forEach(item => {
-                        htmlCategorias += `
-                            <tr data-item-id="${item.id}" draggable="true" title="Arraste para mover">
-                                <td>${nomesMeses[item.mes].slice(0,3)}/${item.ano}</td>
-                                <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'desc', event)"><strong>${item.desc}</strong></td>
-                                <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'pagamento', event)"><span class="tag-pag ${item.pagamento === 'Pix' ? 'tag-pix' : 'tag-cartao'}">${item.pagamento}</span></td>
-                                <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'tipo', event)"><span class="tag-tipo ${item.tipo === 'receita' ? 'tag-receita' : 'tag-despesa'}">${item.tipo.toUpperCase()}</span></td>
-                                <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'valor', event)" style="font-weight: bold; color: ${item.tipo === 'receita' ? 'var(--success)' : 'var(--danger)'};">R$ ${item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                <td>
-                                    <button onclick="duplicarItem(${item.id})" class="btn-duplicate">📄</button>
-                                    <button onclick="editarItem(${item.id})" class="btn-edit">✏️</button>
-                                    <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete">❌</button>
-                                </td>
-                            </tr>
                         `;
                     });
-
-                    htmlCategorias += `
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                htmlCategorias += '</div>';
-                container.innerHTML = htmlCategorias;
+                    htmlCat += '</div></div>';
+                }
+                htmlCat += '</div>';
+                container.innerHTML = htmlCat;
             } else if (modoExibicaoExtrato === 'analitica') {
                 renderPlanilhaAnalitica(dadosExtrato);
             }
