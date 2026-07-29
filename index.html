@@ -486,8 +486,8 @@
             <span class="badge">Gestão & Análises</span>
         </div>
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <button onclick="sincronizacaoRapidaHeader(this)" class="tab-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--success); border-color: rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 6px;" title="Sincronizar dados com o GitHub Gist com 1 clique">
-                <span id="syncIcon">☁️</span> <span id="syncText">Sincronizar Gist</span>
+            <button onclick="sincronizacaoRapidaHeader(this)" class="tab-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--success); border-color: rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 6px;" title="Sincronizar dados com o JSONBin com 1 clique">
+                <span id="syncIcon">☁️</span> <span id="syncText">Sincronizar JSONBin</span>
             </button>
             <div class="nav-tabs">
                 <button class="tab-btn active" onclick="mudarAba('dash')">📊 Dashboard & Análises</button>
@@ -725,21 +725,21 @@
 
     <div id="tabConfig" class="tab-content">
         <div class="card" style="margin-bottom: 24px; border-top: 3px solid var(--primary);">
-            <h2>🐙 Sincronização Automática via GitHub Gist</h2>
+            <h2>☁️ Sincronização Automática via JSONBin.io</h2>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin: 10px 0 20px 0;">
-                Configuração ativa do GitHub Gist integrada diretamente no sistema.
+                Configure sua API Key (Master Key) e o Bin ID do JSONBin.io para sincronizar seus dados entre dispositivos.
             </p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: end;">
                 <div>
-                    <label for="inputGhToken">GitHub Personal Access Token</label>
-                    <input type="password" id="inputGhToken" placeholder="ghp_..." onchange="salvarConfigGh()">
+                    <label for="inputJsonBinKey">JSONBin Master Key (X-Master-Key)</label>
+                    <input type="password" id="inputJsonBinKey" placeholder="$2a$10$..." onchange="salvarConfigJsonBin()">
                 </div>
                 <div>
-                    <label for="inputGhGistId">GitHub Gist ID</label>
-                    <input type="text" id="inputGhGistId" placeholder="ID do Gist..." onchange="salvarConfigGh()">
+                    <label for="inputJsonBinId">JSONBin Bin ID</label>
+                    <input type="text" id="inputJsonBinId" placeholder="ID do Bin..." onchange="salvarConfigJsonBin()">
                 </div>
                 <div>
-                    <button onclick="testarSincronizacaoGist()" class="btn-add" style="height: 44px;">🔄 Sincronizar Agora</button>
+                    <button onclick="testarSincronizacaoJsonBin()" class="btn-add" style="height: 44px;">🔄 Sincronizar Agora</button>
                 </div>
             </div>
         </div>
@@ -779,74 +779,65 @@
     </div>
 
     <script>
-        // Credenciais do GitHub Gist incorporadas diretamente no código-fonte[cite: 3]
-        function getGithubConfig() {
+        // Configuração do JSONBin.io (Fixada com as credenciais fornecidas)
+        function getJsonBinConfig() {
             return {
-                token: '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',
-                gistId: 'fb2fa3612b76c7b2e0ff46c595a17503'
+                apiKey: localStorage.getItem('jsonbin_api_key') || '$2a$10$qFby1zSPpwLGdSAi/ddmiOytJVIkhMxEj3Brn939R9jZnZL2WL4Xe',
+                binId: localStorage.getItem('jsonbin_bin_id') || '6a6970dada38895dfe9e2d57'
             };
         }
 
-        async function carregarDadosDoGist() {
-            const { token, gistId } = getGithubConfig();
-            if (!token || !gistId) {
-                console.warn('Token ou Gist ID não configurados.');
+        async function carregarDadosDoJsonBin() {
+            const { apiKey, binId } = getJsonBinConfig();
+            if (!apiKey || !binId) {
+                console.warn('API Key ou Bin ID do JSONBin não configurados.');
                 return null;
             }
 
             try {
-                const response = `https://api.github.com/gists/${gistId}`;
+                const response = `https://api.jsonbin.io/v3/b/${binId}/latest`;
                 const res = await fetch(response, {
                     headers: {
-                        'Authorization': `token ${token}`
+                        'X-Master-Key': apiKey
                     }
                 });
                 
-                if (!res.ok) throw new Error('Erro ao conectar com a API do GitHub.');
+                if (!res.ok) throw new Error('Erro ao conectar com a API do JSONBin.');
 
                 const data = await res.json();
-                const arquivo = data.files['dados.json'];
-                
-                if (arquivo && arquivo.content) {
-                    return JSON.parse(arquivo.content);
+                if (data && data.record) {
+                    return data.record;
                 }
-                return {};
+                return null;
             } catch (error) {
-                console.error('Falha ao carregar:', error);
+                console.error('Falha ao carregar do JSONBin:', error);
                 return null;
             }
         }
 
-        async function salvarDadosNoGist(dadosObjeto) {
-            const { token, gistId } = getGithubConfig();
-            if (!token || !gistId) {
+        async function salvarDadosNoJsonBin(dadosObjeto) {
+            const { apiKey, binId } = getJsonBinConfig();
+            if (!apiKey || !binId) {
                 return;
             }
 
             try {
-                const response = await fetch(`https://api.github.com/gists/${gistId}`, {
-                    method: 'PATCH',
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+                    method: 'PUT',
                     headers: {
-                        'Authorization': `token ${token}`,
                         'Content-Type': 'application/json',
+                        'X-Master-Key': apiKey,
                     },
-                    body: JSON.stringify({
-                        description: "Atualização automática de dados da aplicação",
-                        files: {
-                            'dados.json': {
-                                content: JSON.stringify(dadosObjeto, null, 2)
-                            }
-                        }
-                    })
+                    body: JSON.stringify(dadosObjeto)
                 });
 
                 if (response.ok) {
-                    console.log('Dados salvos com sucesso no GitHub Gist!');
+                    console.log('Dados salvos com sucesso no JSONBin!');
                 } else {
-                    console.error('Erro ao salvar no GitHub.');
+                    console.error('Erro ao salvar no JSONBin.');
                 }
             } catch (error) {
-                console.error('Erro de rede ao salvar:', error);
+                console.error('Erro de rede ao salvar no JSONBin:', error);
             }
         }
 
@@ -858,15 +849,15 @@
             if (syncIcon) syncIcon.textContent = '⏳';
             
             try {
-                const dadosGist = await carregarDadosDoGist();
-                if (dadosGist && Array.isArray(dadosGist)) {
-                    itens = dadosGist;
-                    localStorage.setItem('finanpro_itens', JSON.stringify(dadosGist));
+                const dadosJsonBin = await carregarDadosDoJsonBin();
+                if (dadosJsonBin && Array.isArray(dadosJsonBin)) {
+                    itens = dadosJsonBin;
+                    localStorage.setItem('finanpro_itens', JSON.stringify(dadosJsonBin));
                     renderizarTudo();
                     if (syncText) syncText.textContent = 'Sincronizado!';
                     if (syncIcon) syncIcon.textContent = '✅';
                 } else {
-                    await salvarDadosNoGist(itens);
+                    await salvarDadosNoJsonBin(itens);
                     if (syncText) syncText.textContent = 'Enviado!';
                     if (syncIcon) syncIcon.textContent = '✅';
                 }
@@ -876,7 +867,7 @@
                 if (syncIcon) syncIcon.textContent = '❌';
             }
             setTimeout(() => {
-                if (syncText) syncText.textContent = 'Sincronizar Gist';
+                if (syncText) syncText.textContent = 'Sincronizar JSONBin';
                 if (syncIcon) syncIcon.textContent = '☁️';
             }, 3000);
         }
@@ -927,10 +918,10 @@
 
         async function carregarDados() {
             try {
-                const dadosGist = await carregarDadosDoGist();
-                if (dadosGist && Array.isArray(dadosGist) && dadosGist.length > 0) {
-                    localStorage.setItem('finanpro_itens', JSON.stringify(dadosGist));
-                    return dadosGist;
+                const dadosJsonBin = await carregarDadosDoJsonBin();
+                if (dadosJsonBin && Array.isArray(dadosJsonBin) && dadosJsonBin.length > 0) {
+                    localStorage.setItem('finanpro_itens', JSON.stringify(dadosJsonBin));
+                    return dadosJsonBin;
                 }
                 const dadosStr = localStorage.getItem('finanpro_itens');
                 return dadosStr ? JSON.parse(dadosStr) : [];
@@ -944,43 +935,43 @@
         async function salvarDados(novosDados) {
             try {
                 localStorage.setItem('finanpro_itens', JSON.stringify(novosDados));
-                await salvarDadosNoGist(novosDados);
+                await salvarDadosNoJsonBin(novosDados);
             } catch (error) {
                 console.error('Erro ao salvar dados', error);
             }
         }
 
-        function carregarConfigGhUI() {
-            const token = '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';
-            const gistId = 'fb2fa3612b76c7b2e0ff46c595a17503';
-            const elToken = document.getElementById('inputGhToken');
-            const elGist = document.getElementById('inputGhGistId');
-            if (elToken) elToken.value = token;
-            if (elGist) elGist.value = gistId;
+        function carregarConfigJsonBinUI() {
+            const apiKey = localStorage.getItem('jsonbin_api_key') || '$2a$10$qFby1zSPpwLGdSAi/ddmiOytJVIkhMxEj3Brn939R9jZnZL2WL4Xe';
+            const binId = localStorage.getItem('jsonbin_bin_id') || '6a6970dada38895dfe9e2d57';
+            const elKey = document.getElementById('inputJsonBinKey');
+            const elBin = document.getElementById('inputJsonBinId');
+            if (elKey) elKey.value = apiKey;
+            if (elBin) elBin.value = binId;
         }
 
-        function salvarConfigGh() {
-            const token = document.getElementById('inputGhToken').value.trim();
-            const gistId = document.getElementById('inputGhGistId').value.trim();
-            localStorage.setItem('gh_token', token);
-            localStorage.setItem('gh_gist_id', gistId);
+        function salvarConfigJsonBin() {
+            const apiKey = document.getElementById('inputJsonBinKey').value.trim();
+            const binId = document.getElementById('inputJsonBinId').value.trim();
+            localStorage.setItem('jsonbin_api_key', apiKey);
+            localStorage.setItem('jsonbin_bin_id', binId);
         }
 
-        async function testarSincronizacaoGist() {
-            salvarConfigGh();
-            const dados = await carregarDadosDoGist();
+        async function testarSincronizacaoJsonBin() {
+            salvarConfigJsonBin();
+            const dados = await carregarDadosDoJsonBin();
             if (dados && Array.isArray(dados)) {
                 itens = dados;
                 await salvarDados(itens);
-                alert('Sincronização com o Gist realizada com sucesso!');
+                alert('Sincronização com o JSONBin realizada com sucesso!');
                 renderizarTudo();
             } else {
-                alert('Não foi possível carregar do Gist. Verifique se o Token e o Gist ID estão corretos.');
+                alert('Não foi possível carregar do JSONBin. Verifique se a Master Key e o Bin ID estão corretos.');
             }
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
-            carregarConfigGhUI();
+            carregarConfigJsonBinUI();
             itens = await carregarDados();
             inicializarAnos();
             renderizarTudo();
@@ -1109,7 +1100,7 @@
             const filterBar = document.getElementById('globalFilterBar');
 
             if (aba === 'dash') {
-                document.querySelectorAll('.tab-btn')[2].classList.add('active'); // Ajustado para o index correto considerando o novo botão no header se necessário, ou use seletor por onclick
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
                 document.getElementById('tabDash').classList.add('active');
                 filterBar.style.display = 'grid';
             } else if (aba === 'matriz') {
@@ -1120,7 +1111,6 @@
                 filterBar.style.display = 'none';
             }
             
-            // Atualiza classe ativa dos botões de abas principais
             document.querySelectorAll('.nav-tabs .tab-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.getAttribute('onclick').includes(aba));
             });
