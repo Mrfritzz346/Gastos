@@ -209,9 +209,19 @@
 
         .card:hover { border-color: rgba(255, 255, 255, 0.12); }
         
-        /* Drag & Drop Styles para Cards do Dash, Extrato e Matriz */
-        .card[draggable="true"], .extrato-card[draggable="true"], tr[draggable="true"] { cursor: grab; }
-        .card[draggable="true"]:active, .extrato-card[draggable="true"]:active, tr[draggable="true"]:active { cursor: grabbing; }
+        /* Drag & Drop Styles para Cards */
+        .card[draggable="true"] { cursor: default; }
+        .drag-handle {
+            cursor: grab;
+            user-select: none;
+            font-size: 1.2rem;
+            opacity: 0.5;
+            transition: opacity 0.2s, color 0.2s;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        .drag-handle:hover { opacity: 1; color: var(--primary); }
+        .card[draggable="true"]:active { cursor: grabbing; }
         .card.dragging, .extrato-card.dragging, tr.dragging { opacity: 0.4; border: 2px dashed var(--primary); background: rgba(139, 92, 246, 0.08); }
 
         .card-header {
@@ -228,6 +238,8 @@
             color: var(--text-main);
             font-weight: 700;
             letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
         }
 
         .form-grid {
@@ -292,6 +304,12 @@
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 24px;
             margin-bottom: 28px;
+        }
+
+        .matriz-grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
         }
 
         @media (max-width: 1280px) {
@@ -399,10 +417,33 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             background-color: rgba(255, 255, 255, 0.02);
+            position: relative;
         }
 
-        th.sortable { cursor: pointer; user-select: none; transition: color 0.2s ease; }
-        th.sortable:hover { color: var(--primary); background-color: rgba(139, 92, 246, 0.05); }
+        th.sortable { cursor: pointer; user-select: none; transition: color 0.2s ease, background-color 0.2s ease; }
+        th.sortable:hover { color: var(--primary); background-color: rgba(139, 92, 246, 0.08); }
+        
+        .th-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .filter-btn-icon {
+            opacity: 0.4;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 2px 5px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .filter-btn-icon:hover, .filter-btn-icon.active {
+            opacity: 1;
+            background: rgba(139, 92, 246, 0.3);
+            color: #c084fc;
+        }
+
         tr:hover { background-color: rgba(255, 255, 255, 0.025); }
 
         .editable-cell {
@@ -464,6 +505,22 @@
         .cat-chip button { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem; padding: 0; transition: transform 0.2s; }
         .cat-chip button:hover { transform: scale(1.2); }
 
+        /* Floating Column Filter Popover */
+        .col-filter-popover {
+            position: fixed;
+            z-index: 9999;
+            background: #111827;
+            border: 1px solid var(--primary);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+            border-radius: 12px;
+            padding: 16px;
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            animation: fadeIn 0.2s ease-out;
+        }
+
         .text-end { text-align: right !important; }
         .text-center { text-align: center !important; }
         .text-success { color: var(--success) !important; }
@@ -489,7 +546,6 @@
         </div>
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             
-            <!-- Novos Botões Separados: Upload e Download -->
             <button onclick="baixarDoJsonBinBtn()" class="tab-btn" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; border-color: rgba(59, 130, 246, 0.4); display: flex; align-items: center; gap: 6px;" title="Baixar e sobrescrever dados da nuvem">
                 <span id="downloadIcon">⬇️</span> <span id="downloadText">Baixar Nuvem</span>
             </button>
@@ -554,56 +610,56 @@
         </div>
 
         <div class="dashboard-grid-3x3" id="dashboardGrid">
-            <!-- Adicionado atributo draggable="true" nos cards abaixo -->
             <div class="card" data-card-id="fluxo" style="margin-bottom: 0;" draggable="true">
-                <div class="card-header"><h2>Fluxo de Caixa Consolidado 🖱️</h2></div>
+                <div class="card-header"><h2><span class="drag-handle" title="Arraste para mover">⣿</span> Fluxo de Caixa Consolidado 🖱️</h2></div>
                 <div class="chart-container"><canvas id="chartFluxoConsolidado"></canvas></div>
             </div>
 
             <div class="card" data-card-id="topEntradas" style="margin-bottom: 0;" draggable="true">
-                <div class="card-header"><h2>Top Entradas por Categoria</h2></div>
+                <div class="card-header"><h2><span class="drag-handle" title="Arraste para mover">⣿</span> Top Entradas por Categoria</h2></div>
                 <div class="chart-container"><canvas id="chartTopEntradas"></canvas></div>
             </div>
 
             <div class="card" data-card-id="entradasDoughnut" style="margin-bottom: 0;" draggable="true">
-                <div class="card-header"><h2 id="tituloDoughnutEntradas">Distribuição de Entradas - <i>Clique para ver itens</i></h2></div>
+                <div class="card-header"><h2 id="tituloDoughnutEntradas"><span class="drag-handle" title="Arraste para mover">⣿</span> Distribuição de Entradas - <i>Clique para ver itens</i></h2></div>
                 <div class="chart-container"><canvas id="chartEntradasDoughnut"></canvas></div>
             </div>
 
             <div class="card card-full-width" data-card-id="evolucaoCat" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header">
-                    <h2>📈 Evolução Mensal por Categoria (Gastos) - 🔍 Visão Panorâmica Ampliada</h2>
+                    <h2><span class="drag-handle" title="Arraste para mover">⣿</span> 📈 Evolução Mensal por Categoria (Gastos) - 🔍 Visão Panorâmica Ampliada</h2>
                 </div>
                 <div class="chart-container chart-container-large"><canvas id="chartEvolucaoCat"></canvas></div>
             </div>
 
             <div class="card" data-card-id="topCategorias" style="margin-bottom: 0;" draggable="true">
-                <div class="card-header"><h2>Top Gastos por Categoria</h2></div>
+                <div class="card-header"><h2><span class="drag-handle" title="Arraste para mover">⣿</span> Top Gastos por Categoria</h2></div>
                 <div class="chart-container"><canvas id="chartTopCategorias"></canvas></div>
             </div>
 
             <div class="card" data-card-id="topItens" style="margin-bottom: 0;" draggable="true">
-                <h2 id="tituloCardTopItens" style="margin-bottom: 20px;">Top Gastos por Itens (Maiores Despesas)</h2>
+                <div class="card-header"><h2 id="tituloCardTopItens"><span class="drag-handle" title="Arraste para mover">⣿</span> Top Gastos por Itens (Maiores Despesas)</h2></div>
                 <div class="chart-container"><canvas id="chartTopItens"></canvas></div>
             </div>
 
             <div class="card" data-card-id="gastosDoughnut" style="margin-bottom: 0;" draggable="true">
-                <div class="card-header"><h2 id="tituloDoughnutGastos">Distribuição de Gastos - <i>Clique para ver itens</i></h2></div>
+                <div class="card-header"><h2 id="tituloDoughnutGastos"><span class="drag-handle" title="Arraste para mover">⣿</span> Distribuição de Gastos - <i>Clique para ver itens</i></h2></div>
                 <div class="chart-container"><canvas id="chartGastosDoughnut"></canvas></div>
             </div>
 
             <div class="card" data-card-id="pixVsCartao" style="margin-bottom: 0;" draggable="true">
-                <div class="card-header"><h2>Comparativo: Pix vs Cartão</h2></div>
+                <div class="card-header"><h2><span class="drag-handle" title="Arraste para mover">⣿</span> Comparativo: Pix vs Cartão</h2></div>
                 <div class="chart-container"><canvas id="chartPixVsCartao"></canvas></div>
             </div>
         </div>
     </div>
 
     <div id="tabTabela" class="tab-content">
-        <div id="matrizGrid" style="display: flex; flex-direction: column; gap: 28px;">
+        <!-- MATRIZ GRID AGORA SUPORTA REORDENAÇÃO COMPLETA DE CARDS -->
+        <div id="matrizGrid" class="matriz-grid-container">
             
-            <div class="card" data-card-id="formLancamento" style="margin-bottom: 0;">
-                <div class="card-header"><h2 id="tituloFormulario">✨ Novo Lançamento 🖱️</h2></div>
+            <div class="card" data-card-id="formLancamento" style="margin-bottom: 0;" draggable="true">
+                <div class="card-header"><h2 id="tituloFormulario"><span class="drag-handle" title="Arraste para mover">⣿</span> ✨ Novo Lançamento 🖱️</h2></div>
                 <form id="formItem" onsubmit="salvarItemForm(event)">
                     <div class="form-grid">
                         <div>
@@ -668,8 +724,11 @@
                 </form>
             </div>
 
-            <div class="card" data-card-id="heatmapGastos" style="margin-bottom: 0;">
-                <div class="card-header"><h2>🔥 Mapa de Calor (Heatmap) de Gastos - Categoria vs Mês</h2></div>
+            <!-- HEATMAP TOTALMENTE MOVÍVEL (DRAGGABLE) -->
+            <div class="card" data-card-id="heatmapGastos" style="margin-bottom: 0;" draggable="true">
+                <div class="card-header">
+                    <h2><span class="drag-handle" title="Arraste para mover">⣿</span> 🔥 Mapa de Calor (Heatmap) de Gastos - Categoria vs Mês</h2>
+                </div>
                 <div class="table-responsive">
                     <table id="tabelaHeatmap">
                         <thead>
@@ -685,8 +744,11 @@
                 </div>
             </div>
 
-            <div class="card" data-card-id="matrizGastos" style="margin-bottom: 0;">
-                <div class="card-header"><h2>📑 Matriz de Gastos Detalhada</h2></div>
+            <!-- MATRIZ DE GASTOS TOTALMENTE MOVÍVEL (DRAGGABLE) -->
+            <div class="card" data-card-id="matrizGastos" style="margin-bottom: 0;" draggable="true">
+                <div class="card-header">
+                    <h2><span class="drag-handle" title="Arraste para mover">⣿</span> 📑 Matriz de Gastos Detalhada</h2>
+                </div>
                 <div class="table-responsive">
                     <table id="tabelaMatriz">
                         <thead>
@@ -703,10 +765,11 @@
                 </div>
             </div>
 
-            <div class="card" data-card-id="extratoLancamentos" style="margin-bottom: 0;">
+            <!-- EXTRATO TOTALMENTE MOVÍVEL (DRAGGABLE) -->
+            <div class="card" data-card-id="extratoLancamentos" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header" style="flex-direction: column; align-items: stretch; gap: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;" id="headerExtrato">
-                        <h2>📋 Extrato Detalhado <span style="font-size:0.75rem; color:var(--primary); font-weight:normal;">(💡 Dica: Arraste os itens para reorganizar e clique para editar!)</span></h2>
+                        <h2><span class="drag-handle" title="Arraste para mover">⣿</span> 📋 Extrato Detalhado <span style="font-size:0.75rem; color:var(--primary); font-weight:normal;">(💡 Clique no título das colunas para ordenar/filtrar)</span></h2>
                     </div>
                     
                     <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: rgba(255, 255, 255, 0.02); padding: 12px; border-radius: 12px; border: 1px solid var(--card-border);">
@@ -719,11 +782,15 @@
                         </label>
                         <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
                             <button id="btnModoCards" class="btn-view-toggle active" onclick="alterarModoExtrato('cards')" title="Exibir lado a lado em cards">📇 Lado a Lado</button>
-                            <button id="btnModoTabela" class="btn-view-toggle" onclick="alterarModoExtrato('tabela')" title="Exibir em lista sequencial">📄 Tabela</button>
+                            <button id="btnModoTabela" class="btn-view-toggle" onclick="alterarModoExtrato('tabela')" title="Exibir em lista sequencial com cabeçalhos interativos">📄 Tabela</button>
                             <button id="btnModoCategorias" class="btn-view-toggle" onclick="alterarModoExtrato('categorias')" title="Exibir agrupado por categorias">📂 Por Categorias</button>
                             <button id="btnModoAnalitica" class="btn-view-toggle" onclick="alterarModoExtrato('analitica')" title="Visão de planilha analítica de alta densidade">📊 Planilha Analítica</button>
-                            <button class="btn-view-toggle" onclick="resetarOrdemExtrato()" title="Restaurar ordem padrão por ID">🔄 Ordem Padrão</button>
+                            <button class="btn-view-toggle" onclick="resetarFiltrosEOrdem()" title="Restaurar ordem e limpar filtros das colunas">🔄 Resetar Filtros</button>
                         </div>
+                    </div>
+                    <div id="painelFiltrosAtivos" style="display: none; background: rgba(139, 92, 246, 0.1); border: 1px solid var(--primary); border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; justify-content: space-between; align-items: center;">
+                        <span id="textoFiltrosAtivos"></span>
+                        <button onclick="limparFiltrosColunas()" style="background: var(--danger); color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;">Limpar Filtros de Coluna</button>
                     </div>
                 </div>
 
@@ -788,6 +855,19 @@
         </div>
     </div>
 
+    <!-- POP-UP FLUTUANTE PARA FILTRO DE COLUNA NO EXTRATO -->
+    <div id="colFilterPopover" class="col-filter-popover" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
+            <strong id="colFilterTitle" style="font-size: 0.85rem; color: #c084fc;">Filtrar Coluna</strong>
+            <button onclick="fecharPopUpFiltro()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;">✖</button>
+        </div>
+        <div id="colFilterContent"></div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+            <button onclick="limparFiltroColunaAtual()" style="background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--card-border); padding: 6px 10px; font-size: 0.75rem; border-radius: 6px;">Limpar</button>
+            <button onclick="aplicarFiltroColunaAtual()" class="btn-success" style="padding: 6px 12px; font-size: 0.75rem; height: auto;">Aplicar</button>
+        </div>
+    </div>
+
     <script>
         // Configuração do JSONBin.io
         function getJsonBinConfig() {
@@ -799,94 +879,54 @@
 
         async function carregarDadosDoJsonBin() {
             const { apiKey, binId } = getJsonBinConfig();
-            if (!apiKey || !binId) {
-                console.warn('API Key ou Bin ID do JSONBin não configurados.');
-                return null;
-            }
-
+            if (!apiKey || !binId) return null;
             try {
                 const response = `https://api.jsonbin.io/v3/b/${binId}/latest`;
-                const res = await fetch(response, {
-                    headers: {
-                        'X-Master-Key': apiKey
-                    }
-                });
-                
+                const res = await fetch(response, { headers: { 'X-Master-Key': apiKey } });
                 if (!res.ok) throw new Error('Erro ao conectar com a API do JSONBin.');
-
                 const data = await res.json();
-                if (data && data.record) {
-                    return data.record;
-                }
+                if (data && data.record) return data.record;
                 return null;
             } catch (error) {
-                console.error('Falha ao carregar do JSONBin:', error);
-                return null;
+                console.error('Falha ao carregar do JSONBin:', error); return null;
             }
         }
 
         async function salvarDadosNoJsonBin(dadosObjeto) {
             const { apiKey, binId } = getJsonBinConfig();
-            if (!apiKey || !binId) {
-                return;
-            }
-
+            if (!apiKey || !binId) return;
             try {
                 const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': apiKey,
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
                     body: JSON.stringify(dadosObjeto)
                 });
-
-                if (response.ok) {
-                    console.log('Dados salvos com sucesso no JSONBin!');
-                } else {
-                    console.error('Erro ao salvar no JSONBin.');
-                }
-            } catch (error) {
-                console.error('Erro de rede ao salvar no JSONBin:', error);
-            }
+                if (response.ok) console.log('Dados salvos com sucesso no JSONBin!');
+                else console.error('Erro ao salvar no JSONBin.');
+            } catch (error) { console.error('Erro de rede ao salvar no JSONBin:', error); }
         }
 
-        // --- NOVAS FUNÇÕES EXCLUSIVAS DE UPLOAD E DOWNLOAD ---
         async function baixarDoJsonBinBtn() {
-            const text = document.getElementById('downloadText');
-            const icon = document.getElementById('downloadIcon');
+            const text = document.getElementById('downloadText'); const icon = document.getElementById('downloadIcon');
             text.textContent = 'Baixando...'; icon.textContent = '⏳';
-            
             try {
                 const dadosJsonBin = await carregarDadosDoJsonBin();
                 if (dadosJsonBin && Array.isArray(dadosJsonBin)) {
-                    itens = dadosJsonBin;
-                    localStorage.setItem('finanpro_itens', JSON.stringify(dadosJsonBin));
-                    renderizarTudo();
-                    text.textContent = 'Baixado!'; icon.textContent = '✅';
+                    itens = dadosJsonBin; localStorage.setItem('finanpro_itens', JSON.stringify(dadosJsonBin));
+                    renderizarTudo(); text.textContent = 'Baixado!'; icon.textContent = '✅';
                     alert('Dados baixados da nuvem com sucesso!');
-                } else {
-                    text.textContent = 'Erro'; icon.textContent = '❌';
-                    alert('Nenhum dado encontrado na nuvem ou erro de conexão.');
-                }
-            } catch (e) {
-                text.textContent = 'Erro'; icon.textContent = '❌';
-            }
+                } else { text.textContent = 'Erro'; icon.textContent = '❌'; alert('Nenhum dado encontrado na nuvem.'); }
+            } catch (e) { text.textContent = 'Erro'; icon.textContent = '❌'; }
             setTimeout(() => { text.textContent = 'Baixar Nuvem'; icon.textContent = '⬇️'; }, 3000);
         }
 
         async function enviarParaJsonBinBtn() {
-            const text = document.getElementById('uploadText');
-            const icon = document.getElementById('uploadIcon');
+            const text = document.getElementById('uploadText'); const icon = document.getElementById('uploadIcon');
             text.textContent = 'Enviando...'; icon.textContent = '⏳';
-            
             try {
                 await salvarDadosNoJsonBin(itens);
-                text.textContent = 'Salvo!'; icon.textContent = '✅';
-                alert('Dados atualizados na nuvem com sucesso!');
-            } catch (e) {
-                text.textContent = 'Erro'; icon.textContent = '❌';
-            }
+                text.textContent = 'Salvo!'; icon.textContent = '✅'; alert('Dados atualizados na nuvem com sucesso!');
+            } catch (e) { text.textContent = 'Erro'; icon.textContent = '❌'; }
             setTimeout(() => { text.textContent = 'Salvar na Nuvem'; icon.textContent = '⬆️'; }, 3000);
         }
 
@@ -903,14 +943,21 @@
         let sortExtratoField = null;
         let sortExtratoDir = 'asc';
 
-        let chartFluxoInstance = null;
-        let chartTopEntradasInstance = null;
-        let chartEntradasDoughnutInstance = null;
-        let chartTopCatInstance = null;
-        let chartTopItensInstance = null;
-        let chartEvolucaoCatInstance = null;
-        let chartGastosDoughnutInstance = null;
-        let chartPixVsCartaoInstance = null;
+        // FILTROS ESPECÍFICOS DE COLUNA DO EXTRATO
+        let columnFilters = {
+            data: '',
+            desc: '',
+            categoria: 'todas',
+            pagamento: 'todos',
+            tipo: 'todos',
+            valorMin: '',
+            valorMax: ''
+        };
+        let campoFiltroAberto = null;
+
+        let chartFluxoInstance = null, chartTopEntradasInstance = null, chartEntradasDoughnutInstance = null;
+        let chartTopCatInstance = null, chartTopItensInstance = null, chartEvolucaoCatInstance = null;
+        let chartGastosDoughnutInstance = null, chartPixVsCartaoInstance = null;
 
         const nomesMeses = {"01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro"};
         const mesesKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
@@ -919,73 +966,41 @@
         const darkChartOptions = {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'inherit' } } } },
-            scales: {
-                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } },
-                y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } }
-            }
+            scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } } }
         };
 
         const darkChartOptionsHorizontal = {
             responsive: true, maintainAspectRatio: false, indexAxis: 'y',
             plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'inherit' } } } },
-            scales: {
-                x: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } },
-                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } }
-            }
+            scales: { x: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } } }
         };
 
         async function carregarDados() {
             try {
                 const dadosJsonBin = await carregarDadosDoJsonBin();
-                if (dadosJsonBin && Array.isArray(dadosJsonBin) && dadosJsonBin.length > 0) {
-                    localStorage.setItem('finanpro_itens', JSON.stringify(dadosJsonBin));
-                    return dadosJsonBin;
-                }
-                const dadosStr = localStorage.getItem('finanpro_itens');
-                return dadosStr ? JSON.parse(dadosStr) : [];
-            } catch (error) {
-                console.error('Erro ao carregar dados', error);
-                const dadosStr = localStorage.getItem('finanpro_itens');
-                return dadosStr ? JSON.parse(dadosStr) : [];
-            }
+                if (dadosJsonBin && Array.isArray(dadosJsonBin) && dadosJsonBin.length > 0) { localStorage.setItem('finanpro_itens', JSON.stringify(dadosJsonBin)); return dadosJsonBin; }
+                const dadosStr = localStorage.getItem('finanpro_itens'); return dadosStr ? JSON.parse(dadosStr) : [];
+            } catch (error) { const dadosStr = localStorage.getItem('finanpro_itens'); return dadosStr ? JSON.parse(dadosStr) : []; }
         }
 
-        async function salvarDados(novosDados) {
-            try {
-                localStorage.setItem('finanpro_itens', JSON.stringify(novosDados));
-                await salvarDadosNoJsonBin(novosDados);
-            } catch (error) {
-                console.error('Erro ao salvar dados', error);
-            }
-        }
+        async function salvarDados(novosDados) { try { localStorage.setItem('finanpro_itens', JSON.stringify(novosDados)); await salvarDadosNoJsonBin(novosDados); } catch (error) {} }
 
         function carregarConfigJsonBinUI() {
             const apiKey = localStorage.getItem('jsonbin_api_key') || '$2a$10$Kd2W4zzyAaRFHYv5atRGe.4tNO2OKDNGnpl/IT5BNeppSyzPGi.ZO';
             const binId = localStorage.getItem('jsonbin_bin_id') || '6a6a7357f5f4af5e29d2fb65';
-            const elKey = document.getElementById('inputJsonBinKey');
-            const elBin = document.getElementById('inputJsonBinId');
-            if (elKey) elKey.value = apiKey;
-            if (elBin) elBin.value = binId;
+            if (document.getElementById('inputJsonBinKey')) document.getElementById('inputJsonBinKey').value = apiKey;
+            if (document.getElementById('inputJsonBinId')) document.getElementById('inputJsonBinId').value = binId;
         }
 
         function salvarConfigJsonBin() {
-            const apiKey = document.getElementById('inputJsonBinKey').value.trim();
-            const binId = document.getElementById('inputJsonBinId').value.trim();
-            localStorage.setItem('jsonbin_api_key', apiKey);
-            localStorage.setItem('jsonbin_bin_id', binId);
+            localStorage.setItem('jsonbin_api_key', document.getElementById('inputJsonBinKey').value.trim());
+            localStorage.setItem('jsonbin_bin_id', document.getElementById('inputJsonBinId').value.trim());
         }
 
         async function testarSincronizacaoJsonBin() {
-            salvarConfigJsonBin();
-            const dados = await carregarDadosDoJsonBin();
-            if (dados && Array.isArray(dados)) {
-                itens = dados;
-                await salvarDados(itens);
-                alert('Sincronização com o JSONBin realizada com sucesso!');
-                renderizarTudo();
-            } else {
-                alert('Não foi possível carregar do JSONBin. Verifique se a Master Key e o Bin ID estão corretos.');
-            }
+            salvarConfigJsonBin(); const dados = await carregarDadosDoJsonBin();
+            if (dados && Array.isArray(dados)) { itens = dados; await salvarDados(itens); alert('Sincronização com o JSONBin realizada!'); renderizarTudo(); } 
+            else alert('Não foi possível carregar do JSONBin. Verifique os dados.');
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -993,12 +1008,83 @@
             itens = await carregarDados();
             inicializarAnos();
             
-            // Inicia e restaura as ordens de drag and drop
-            restaurarOrdemDashboard();
-            configurarDragAndDropDashboard();
+            // Inicia e restaura Drag & Drop para Dashboard
+            restaurarOrdemGrid('dashboardGrid', 'finanpro_dash_ordem');
+            configurarDragAndDropGrid('dashboardGrid', 'finanpro_dash_ordem');
             
+            // Inicia e restaura Drag & Drop para Matriz, Heatmap e Formulário
+            restaurarOrdemGrid('matrizGrid', 'finanpro_matriz_ordem');
+            configurarDragAndDropGrid('matrizGrid', 'finanpro_matriz_ordem');
+            
+            // Fechar popover de filtro ao clicar fora
+            document.addEventListener('click', (e) => {
+                const popover = document.getElementById('colFilterPopover');
+                if (popover && popover.style.display !== 'none' && !popover.contains(e.target) && !e.target.classList.contains('filter-btn-icon')) {
+                    fecharPopUpFiltro();
+                }
+            });
+
             renderizarTudo();
         });
+
+        // ==================== LÓGICA DE DRAG & DROP DE CARDS ====================
+        function configurarDragAndDropGrid(gridId, storageKey) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            const cards = grid.querySelectorAll('.card[draggable="true"]');
+            
+            cards.forEach(card => {
+                card.addEventListener('dragstart', (e) => {
+                    // Evita arrastar o card se a origem for uma linha de tabela interna
+                    if (e.target.closest('tr')) return;
+                    card.classList.add('dragging');
+                });
+                card.addEventListener('dragend', () => { 
+                    card.classList.remove('dragging'); 
+                    salvarOrdemGrid(gridId, storageKey);
+                });
+            });
+
+            grid.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(grid, e.clientY);
+                const draggable = document.querySelector('.card.dragging');
+                if (draggable && grid.contains(draggable)) {
+                    if (afterElement == null) grid.appendChild(draggable); 
+                    else grid.insertBefore(draggable, afterElement);
+                }
+            });
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.card[draggable="true"]:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+                else return closest;
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function salvarOrdemGrid(gridId, storageKey) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            const cards = grid.querySelectorAll('.card[draggable="true"]');
+            const ordem = Array.from(cards).map(card => card.dataset.cardId);
+            localStorage.setItem(storageKey, JSON.stringify(ordem));
+        }
+
+        function restaurarOrdemGrid(gridId, storageKey) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            const ordem = JSON.parse(localStorage.getItem(storageKey));
+            if (!ordem || !Array.isArray(ordem)) return;
+            ordem.forEach(id => {
+                const card = grid.querySelector(`[data-card-id="${id}"]`);
+                if (card) grid.appendChild(card);
+            });
+        }
+        // =======================================================================
 
         function alterarModoExtrato(modo) {
             modoExibicaoExtrato = modo;
@@ -1010,526 +1096,292 @@
         }
 
         function ordenarExtrato(campo) {
-            if (sortExtratoField === campo) sortExtratoDir = sortExtratoDir === 'asc' ? 'desc' : 'asc';
-            else { sortExtratoField = campo; sortExtratoDir = 'asc'; }
+            if (sortExtratoField === campo) {
+                sortExtratoDir = sortExtratoDir === 'asc' ? 'desc' : 'asc';
+            } else { 
+                sortExtratoField = campo; 
+                sortExtratoDir = 'asc'; 
+            }
             renderizarTudo();
         }
 
-        function resetarOrdemExtrato() {
+        function resetarFiltrosEOrdem() {
             localStorage.removeItem('finanpro_extrato_manual_ordem');
             sortExtratoField = null;
+            limparFiltrosColunas();
+        }
+
+        // ================= POP-UP E LÓGICA DE FILTROS POR COLUNA =================
+        function abrirPopUpFiltroColuna(campo, event) {
+            event.stopPropagation();
+            campoFiltroAberto = campo;
+            const popover = document.getElementById('colFilterPopover');
+            const content = document.getElementById('colFilterContent');
+            const title = document.getElementById('colFilterTitle');
+
+            const rect = event.currentTarget.getBoundingClientRect();
+            popover.style.top = `${rect.bottom + window.scrollY + 6}px`;
+            popover.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 270)}px`;
+
+            const todasCats = [...new Set([...categoriasReceita, ...categoriasDespesa])].sort();
+
+            if (campo === 'desc') {
+                title.textContent = 'Filtrar Descrição';
+                content.innerHTML = `<label>Termo de Busca:</label><input type="text" id="popInputDesc" value="${columnFilters.desc}" placeholder="Ex: Mercado, Aluguel...">`;
+            } else if (campo === 'data') {
+                title.textContent = 'Filtrar Data/Período';
+                content.innerHTML = `<label>Mês ou Ano:</label><input type="text" id="popInputData" value="${columnFilters.data}" placeholder="Ex: 03, Jan, 2026...">`;
+            } else if (campo === 'categoria') {
+                title.textContent = 'Filtrar Categoria';
+                let options = `<option value="todas">📂 Todas</option>`;
+                todasCats.forEach(c => { options += `<option value="${c}" ${columnFilters.categoria === c ? 'selected' : ''}>${c}</option>`; });
+                content.innerHTML = `<label>Selecionar Categoria:</label><select id="popSelectCat">${options}</select>`;
+            } else if (campo === 'pagamento') {
+                title.textContent = 'Filtrar Pagamento';
+                content.innerHTML = `
+                    <label>Forma de Pagamento:</label>
+                    <select id="popSelectPag">
+                        <option value="todos" ${columnFilters.pagamento === 'todos' ? 'selected' : ''}>💳 Todos</option>
+                        <option value="Pix" ${columnFilters.pagamento === 'Pix' ? 'selected' : ''}>Pix</option>
+                        <option value="Cartão" ${columnFilters.pagamento === 'Cartão' ? 'selected' : ''}>Cartão</option>
+                    </select>`;
+            } else if (campo === 'tipo') {
+                title.textContent = 'Filtrar Tipo/Fluxo';
+                content.innerHTML = `
+                    <label>Tipo de Lançamento:</label>
+                    <select id="popSelectTipo">
+                        <option value="todos" ${columnFilters.tipo === 'todos' ? 'selected' : ''}>Todos</option>
+                        <option value="despesa" ${columnFilters.tipo === 'despesa' ? 'selected' : ''}>📉 Despesa (-)</option>
+                        <option value="receita" ${columnFilters.tipo === 'receita' ? 'selected' : ''}>📈 Receita (+)</option>
+                    </select>`;
+            } else if (campo === 'valor') {
+                title.textContent = 'Filtrar por Faixa de Valor';
+                content.innerHTML = `
+                    <label>Valor Mínimo (R$):</label>
+                    <input type="number" step="0.01" id="popInputValMin" value="${columnFilters.valorMin}" placeholder="0.00">
+                    <label style="margin-top:8px;">Valor Máximo (R$):</label>
+                    <input type="number" step="0.01" id="popInputValMax" value="${columnFilters.valorMax}" placeholder="1000.00">`;
+            }
+
+            popover.style.display = 'flex';
+        }
+
+        function fecharPopUpFiltro() {
+            document.getElementById('colFilterPopover').style.display = 'none';
+            campoFiltroAberto = null;
+        }
+
+        function aplicarFiltroColunaAtual() {
+            if (!campoFiltroAberto) return;
+            if (campoFiltroAberto === 'desc') {
+                columnFilters.desc = document.getElementById('popInputDesc').value.trim();
+            } else if (campoFiltroAberto === 'data') {
+                columnFilters.data = document.getElementById('popInputData').value.trim();
+            } else if (campoFiltroAberto === 'categoria') {
+                columnFilters.categoria = document.getElementById('popSelectCat').value;
+            } else if (campoFiltroAberto === 'pagamento') {
+                columnFilters.pagamento = document.getElementById('popSelectPag').value;
+            } else if (campoFiltroAberto === 'tipo') {
+                columnFilters.tipo = document.getElementById('popSelectTipo').value;
+            } else if (campoFiltroAberto === 'valor') {
+                columnFilters.valorMin = document.getElementById('popInputValMin').value;
+                columnFilters.valorMax = document.getElementById('popInputValMax').value;
+            }
+            fecharPopUpFiltro();
+            renderizarTudo();
+        }
+
+        function limparFiltroColunaAtual() {
+            if (!campoFiltroAberto) return;
+            if (campoFiltroAberto === 'desc') columnFilters.desc = '';
+            else if (campoFiltroAberto === 'data') columnFilters.data = '';
+            else if (campoFiltroAberto === 'categoria') columnFilters.categoria = 'todas';
+            else if (campoFiltroAberto === 'pagamento') columnFilters.pagamento = 'todos';
+            else if (campoFiltroAberto === 'tipo') columnFilters.tipo = 'todos';
+            else if (campoFiltroAberto === 'valor') { columnFilters.valorMin = ''; columnFilters.valorMax = ''; }
+            fecharPopUpFiltro();
+            renderizarTudo();
+        }
+
+        function limparFiltrosColunas() {
+            columnFilters = { data: '', desc: '', categoria: 'todas', pagamento: 'todos', tipo: 'todos', valorMin: '', valorMax: '' };
             renderizarTudo();
         }
 
         async function editarCelulaInline(id, campo, event) {
             event.stopPropagation();
-            const item = itens.find(i => i.id === id);
-            if (!item) return;
-            const el = event.currentTarget;
-            if (el.querySelector('input, select')) return;
+            const item = itens.find(i => i.id === id); if (!item) return;
+            const el = event.currentTarget; if (el.querySelector('input, select')) return;
 
             if (campo === 'categoria') {
                 const cats = item.tipo === 'receita' ? categoriasReceita : categoriasDespesa;
-                let select = document.createElement('select');
-                select.style.cssText = 'background: var(--input-bg); color: var(--text-main); border: 1px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; width: 100%; outline: none;';
-                cats.forEach(c => {
-                    let opt = document.createElement('option');
-                    opt.value = c; opt.textContent = c;
-                    if (c === item.categoria) opt.selected = true;
-                    select.appendChild(opt);
-                });
-                select.onchange = async (e) => { item.categoria = e.target.value; await salvarStorageAsync(); };
-                select.onblur = () => renderizarTudo();
+                let select = document.createElement('select'); select.style.cssText = 'background: var(--input-bg); color: var(--text-main); border: 1px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; width: 100%; outline: none;';
+                cats.forEach(c => { let opt = document.createElement('option'); opt.value = c; opt.textContent = c; if (c === item.categoria) opt.selected = true; select.appendChild(opt); });
+                select.onchange = async (e) => { item.categoria = e.target.value; await salvarStorageAsync(); }; select.onblur = () => renderizarTudo();
                 el.innerHTML = ''; el.appendChild(select); select.focus();
             } else if (campo === 'pagamento') {
-                let select = document.createElement('select');
-                select.style.cssText = 'background: var(--input-bg); color: var(--text-main); border: 1px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; width: 100%; outline: none;';
-                ['Pix', 'Cartão'].forEach(p => {
-                    let opt = document.createElement('option');
-                    opt.value = p; opt.textContent = p;
-                    if (p === item.pagamento) opt.selected = true;
-                    select.appendChild(opt);
-                });
-                select.onchange = async (e) => { item.pagamento = e.target.value; await salvarStorageAsync(); };
-                select.onblur = () => renderizarTudo();
+                let select = document.createElement('select'); select.style.cssText = 'background: var(--input-bg); color: var(--text-main); border: 1px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; width: 100%; outline: none;';
+                ['Pix', 'Cartão'].forEach(p => { let opt = document.createElement('option'); opt.value = p; opt.textContent = p; if (p === item.pagamento) opt.selected = true; select.appendChild(opt); });
+                select.onchange = async (e) => { item.pagamento = e.target.value; await salvarStorageAsync(); }; select.onblur = () => renderizarTudo();
                 el.innerHTML = ''; el.appendChild(select); select.focus();
             } else if (campo === 'tipo') {
-                let select = document.createElement('select');
-                select.style.cssText = 'background: var(--input-bg); color: var(--text-main); border: 1px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; width: 100%; outline: none;';
-                [{val: 'receita', label: 'RECEITA'}, {val: 'despesa', label: 'DESPESA'}].forEach(t => {
-                    let opt = document.createElement('option');
-                    opt.value = t.val; opt.textContent = t.label;
-                    if (t.val === item.tipo) opt.selected = true;
-                    select.appendChild(opt);
-                });
-                select.onchange = async (e) => {
-                    item.tipo = e.target.value;
-                    if (item.tipo === 'receita') item.pagamento = 'Pix';
-                    const cats = item.tipo === 'receita' ? categoriasReceita : categoriasDespesa;
-                    if (!cats.includes(item.categoria)) item.categoria = cats[0];
-                    await salvarStorageAsync();
-                };
-                select.onblur = () => renderizarTudo();
+                let select = document.createElement('select'); select.style.cssText = 'background: var(--input-bg); color: var(--text-main); border: 1px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; width: 100%; outline: none;';
+                [{val: 'receita', label: 'RECEITA'}, {val: 'despesa', label: 'DESPESA'}].forEach(t => { let opt = document.createElement('option'); opt.value = t.val; opt.textContent = t.label; if (t.val === item.tipo) opt.selected = true; select.appendChild(opt); });
+                select.onchange = async (e) => { item.tipo = e.target.value; if (item.tipo === 'receita') item.pagamento = 'Pix'; const cats = item.tipo === 'receita' ? categoriasReceita : categoriasDespesa; if (!cats.includes(item.categoria)) item.categoria = cats[0]; await salvarStorageAsync(); }; select.onblur = () => renderizarTudo();
                 el.innerHTML = ''; el.appendChild(select); select.focus();
             } else if (campo === 'valor') {
-                let input = document.createElement('input');
-                input.type = 'number'; input.step = '0.01'; input.value = item.valor;
-                input.style.cssText = 'background: var(--input-bg); color: var(--text-main); border: 1px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; width: 110px; outline: none;';
-                input.onkeydown = async (e) => { if (e.key === 'Enter') { let val = parseFloat(input.value); if (!isNaN(val)) { item.valor = val; await salvarStorageAsync(); } } };
-                input.onblur = async () => { let val = parseFloat(input.value); if (!isNaN(val)) { item.valor = val; await salvarStorageAsync(); } else renderizarTudo(); };
+                let input = document.createElement('input'); input.type = 'number'; input.step = '0.01'; input.value = item.valor; input.style.cssText = 'background: var(--input-bg); color: var(--text-main); border: 1px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; width: 110px; outline: none;';
+                input.onkeydown = async (e) => { if (e.key === 'Enter') { let val = parseFloat(input.value); if (!isNaN(val)) { item.valor = val; await salvarStorageAsync(); } } }; input.onblur = async () => { let val = parseFloat(input.value); if (!isNaN(val)) { item.valor = val; await salvarStorageAsync(); } else renderizarTudo(); };
                 el.innerHTML = ''; el.appendChild(input); input.focus(); input.select();
             } else if (campo === 'desc') {
-                let input = document.createElement('input');
-                input.type = 'text'; input.value = item.desc;
-                input.style.cssText = 'background: var(--input-bg); color: var(--text-main); border: 1px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; width: 100%; outline: none;';
-                input.onkeydown = async (e) => { if (e.key === 'Enter') { item.desc = input.value; await salvarStorageAsync(); } };
-                input.onblur = async () => { item.desc = input.value; await salvarStorageAsync(); };
+                let input = document.createElement('input'); input.type = 'text'; input.value = item.desc; input.style.cssText = 'background: var(--input-bg); color: var(--text-main); border: 1px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 0.85rem; width: 100%; outline: none;';
+                input.onkeydown = async (e) => { if (e.key === 'Enter') { item.desc = input.value; await salvarStorageAsync(); } }; input.onblur = async () => { item.desc = input.value; await salvarStorageAsync(); };
                 el.innerHTML = ''; el.appendChild(input); input.focus(); input.select();
             }
         }
 
-        function toggleTipoForm() {
-            const tipo = document.getElementById('tipo').value;
-            if (tipo === 'receita') {
-                document.getElementById('containerPagamento').style.display = 'none';
-                document.getElementById('containerParcelas').style.display = 'none';
-                document.getElementById('containerRecorrenteBox').style.display = 'flex';
-            } else {
-                document.getElementById('containerPagamento').style.display = 'block';
-                document.getElementById('containerRecorrenteBox').style.display = 'flex';
-                toggleParcelas();
-            }
-        }
-
-        function toggleParcelas() {
-            const pagamento = document.getElementById('pagamento').value;
-            const isRecorrente = document.getElementById('recorrente').checked;
-            const tipo = document.getElementById('tipo').value;
-            if (tipo === 'receita') document.getElementById('containerParcelas').style.display = 'none';
-            else document.getElementById('containerParcelas').style.display = (pagamento === 'Cartão' && !isRecorrente) ? 'block' : 'none';
-        }
-
-        function toggleRecorrente() {
-            const isRecorrente = document.getElementById('recorrente').checked;
-            const pagamento = document.getElementById('pagamento').value;
-            const tipo = document.getElementById('tipo').value;
-            if (tipo === 'receita') document.getElementById('containerParcelas').style.display = 'none';
-            else document.getElementById('containerParcelas').style.display = (isRecorrente || pagamento !== 'Cartão') ? 'none' : 'block';
-        }
+        function toggleTipoForm() { const tipo = document.getElementById('tipo').value; if (tipo === 'receita') { document.getElementById('containerPagamento').style.display = 'none'; document.getElementById('containerParcelas').style.display = 'none'; document.getElementById('containerRecorrenteBox').style.display = 'flex'; } else { document.getElementById('containerPagamento').style.display = 'block'; document.getElementById('containerRecorrenteBox').style.display = 'flex'; toggleParcelas(); } }
+        function toggleParcelas() { const pagamento = document.getElementById('pagamento').value; const isRecorrente = document.getElementById('recorrente').checked; const tipo = document.getElementById('tipo').value; if (tipo === 'receita') document.getElementById('containerParcelas').style.display = 'none'; else document.getElementById('containerParcelas').style.display = (pagamento === 'Cartão' && !isRecorrente) ? 'block' : 'none'; }
+        function toggleRecorrente() { const isRecorrente = document.getElementById('recorrente').checked; const pagamento = document.getElementById('pagamento').value; const tipo = document.getElementById('tipo').value; if (tipo === 'receita') document.getElementById('containerParcelas').style.display = 'none'; else document.getElementById('containerParcelas').style.display = (isRecorrente || pagamento !== 'Cartão') ? 'none' : 'block'; }
 
         function mudarAba(aba) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             const filterBar = document.getElementById('globalFilterBar');
-
-            if (aba === 'dash') {
-                document.querySelectorAll('.tab-btn')[2].classList.add('active');
-                document.getElementById('tabDash').classList.add('active');
-                filterBar.style.display = 'grid';
-            } else if (aba === 'matriz') {
-                document.getElementById('tabTabela').classList.add('active');
-                filterBar.style.display = 'grid';
-            } else {
-                document.getElementById('tabConfig').classList.add('active');
-                filterBar.style.display = 'none';
-            }
-            
-            document.querySelectorAll('.nav-tabs .tab-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('onclick').includes(aba));
-            });
-
-            renderizarTudo();
+            if (aba === 'dash') { document.querySelectorAll('.tab-btn')[2].classList.add('active'); document.getElementById('tabDash').classList.add('active'); filterBar.style.display = 'grid'; } else if (aba === 'matriz') { document.getElementById('tabTabela').classList.add('active'); filterBar.style.display = 'grid'; } else { document.getElementById('tabConfig').classList.add('active'); filterBar.style.display = 'none'; }
+            document.querySelectorAll('.nav-tabs .tab-btn').forEach(btn => { btn.classList.toggle('active', btn.getAttribute('onclick').includes(aba)); }); renderizarTudo();
         }
 
         function limparFiltroDrillDown() { drillDownFiltro = null; categoriaFocoEntradas = null; categoriaFocoGastos = null; }
-        function acionarDrillDown(mes, categoria) {
-            drillDownFiltro = { mes, categoria };
-            mudarAba('matriz'); renderizarTudo();
-            document.getElementById('headerExtrato').scrollIntoView({ behavior: 'smooth' });
-        }
+        function acionarDrillDown(mes, categoria) { drillDownFiltro = { mes, categoria }; mudarAba('matriz'); renderizarTudo(); document.getElementById('headerExtrato').scrollIntoView({ behavior: 'smooth' }); }
 
         function inicializarAnos() {
-            const selectAnoDash = document.getElementById('anoDashboard');
-            const selectAnoInput = document.getElementById('anoInput');
-            const anoAtual = new Date().getFullYear();
-            const anoInicial = Math.max(2026, anoAtual);
+            const selectAnoDash = document.getElementById('anoDashboard'); const selectAnoInput = document.getElementById('anoInput');
+            const anoAtual = new Date().getFullYear(); const anoInicial = Math.max(2026, anoAtual);
             selectAnoDash.innerHTML = ''; selectAnoInput.innerHTML = '';
             for (let i = 2026; i <= 2035; i++) {
-                let opt1 = document.createElement('option'); opt1.value = i; opt1.textContent = i;
-                if (i === anoInicial) opt1.selected = true; selectAnoDash.appendChild(opt1);
-                let opt2 = document.createElement('option'); opt2.value = i; opt2.textContent = i;
-                if (i === anoInicial) opt2.selected = true; selectAnoInput.appendChild(opt2);
+                let opt1 = document.createElement('option'); opt1.value = i; opt1.textContent = i; if (i === anoInicial) opt1.selected = true; selectAnoDash.appendChild(opt1);
+                let opt2 = document.createElement('option'); opt2.value = i; opt2.textContent = i; if (i === anoInicial) opt2.selected = true; selectAnoInput.appendChild(opt2);
             }
         }
 
         function atualizarSelectCategoriasFiltro() {
-            const selectCatFiltro = document.getElementById('categoriaDashboard');
-            const catAtual = selectCatFiltro.value;
-            const todasCats = [...new Set([...categoriasReceita, ...categoriasDespesa])].sort();
-            selectCatFiltro.innerHTML = '<option value="todas">📂 Todas as Categorias</option>';
-            todasCats.forEach(cat => {
-                let opt = document.createElement('option'); opt.value = cat; opt.textContent = cat;
-                if (cat === catAtual) opt.selected = true; selectCatFiltro.appendChild(opt);
-            });
+            const selectCatFiltro = document.getElementById('categoriaDashboard'); const catAtual = selectCatFiltro.value; const todasCats = [...new Set([...categoriasReceita, ...categoriasDespesa])].sort();
+            selectCatFiltro.innerHTML = '<option value="todas">📂 Todas as Categorias</option>'; todasCats.forEach(cat => { let opt = document.createElement('option'); opt.value = cat; opt.textContent = cat; if (cat === catAtual) opt.selected = true; selectCatFiltro.appendChild(opt); });
         }
-
-        function atualizarCategoriasNoFormulario() {
-            const tipo = document.getElementById('tipo').value;
-            const selectCat = document.getElementById('categoria');
-            selectCat.innerHTML = '';
-            (tipo === 'receita' ? categoriasReceita : categoriasDespesa).forEach(cat => {
-                let opt = document.createElement('option'); opt.value = cat; opt.textContent = cat;
-                selectCat.appendChild(opt);
-            });
-        }
+        function atualizarCategoriasNoFormulario() { const tipo = document.getElementById('tipo').value; const selectCat = document.getElementById('categoria'); selectCat.innerHTML = ''; (tipo === 'receita' ? categoriasReceita : categoriasDespesa).forEach(cat => { let opt = document.createElement('option'); opt.value = cat; opt.textContent = cat; selectCat.appendChild(opt); }); }
 
         function renderizarConfigCategorias() {
             document.getElementById('listaCatReceita').innerHTML = categoriasReceita.map(cat => `<div class="cat-chip">${cat} <button onclick="excluirCategoria('${cat}', 'receita')">✖</button></div>`).join('');
-            document.getElementById('listaCatDespesa').innerHTML = categoriasDespesa.map(cat => {
-                const estilo = cat === 'Investimentos' ? 'border-color: var(--pix-color); color: var(--pix-color); background: rgba(6, 182, 212, 0.1);' : '';
-                return `<div class="cat-chip" style="${estilo}">${cat} <button onclick="excluirCategoria('${cat}', 'despesa')">✖</button></div>`;
-            }).join('');
-            atualizarCategoriasNoFormulario();
-            atualizarSelectCategoriasFiltro();
+            document.getElementById('listaCatDespesa').innerHTML = categoriasDespesa.map(cat => { const estilo = cat === 'Investimentos' ? 'border-color: var(--pix-color); color: var(--pix-color); background: rgba(6, 182, 212, 0.1);' : ''; return `<div class="cat-chip" style="${estilo}">${cat} <button onclick="excluirCategoria('${cat}', 'despesa')">✖</button></div>`; }).join('');
+            atualizarCategoriasNoFormulario(); atualizarSelectCategoriasFiltro();
         }
 
         function adicionarCategoria(e, tipo) {
-            e.preventDefault();
-            const input = document.getElementById(tipo === 'receita' ? 'inputCatReceita' : 'inputCatDespesa');
-            const val = input.value.trim();
-            if (val && !(tipo === 'receita' ? categoriasReceita : categoriasDespesa).includes(val)) {
-                if (tipo === 'receita') { categoriasReceita.push(val); localStorage.setItem('finanpro_cats_rec', JSON.stringify(categoriasReceita)); }
-                else { categoriasDespesa.push(val); localStorage.setItem('finanpro_cats_desp', JSON.stringify(categoriasDespesa)); }
-                input.value = '';
-            }
+            e.preventDefault(); const input = document.getElementById(tipo === 'receita' ? 'inputCatReceita' : 'inputCatDespesa'); const val = input.value.trim();
+            if (val && !(tipo === 'receita' ? categoriasReceita : categoriasDespesa).includes(val)) { if (tipo === 'receita') { categoriasReceita.push(val); localStorage.setItem('finanpro_cats_rec', JSON.stringify(categoriasReceita)); } else { categoriasDespesa.push(val); localStorage.setItem('finanpro_cats_desp', JSON.stringify(categoriasDespesa)); } input.value = ''; }
             renderizarConfigCategorias(); renderizarTudo();
         }
 
         function excluirCategoria(cat, tipo) {
-            let lista = tipo === 'receita' ? categoriasReceita : categoriasDespesa;
-            if (lista.length <= 1) return alert("Mantenha ao menos uma categoria.");
-            if (confirm(`Remover "${cat}"?`)) {
-                if (tipo === 'receita') { categoriasReceita = categoriasReceita.filter(c => c !== cat); localStorage.setItem('finanpro_cats_rec', JSON.stringify(categoriasReceita)); }
-                else { categoriasDespesa = categoriasDespesa.filter(c => c !== cat); localStorage.setItem('finanpro_cats_desp', JSON.stringify(categoriasDespesa)); }
-                renderizarConfigCategorias(); renderizarTudo();
-            }
+            let lista = tipo === 'receita' ? categoriasReceita : categoriasDespesa; if (lista.length <= 1) return alert("Mantenha ao menos uma categoria.");
+            if (confirm(`Remover "${cat}"?`)) { if (tipo === 'receita') { categoriasReceita = categoriasReceita.filter(c => c !== cat); localStorage.setItem('finanpro_cats_rec', JSON.stringify(categoriasReceita)); } else { categoriasDespesa = categoriasDespesa.filter(c => c !== cat); localStorage.setItem('finanpro_cats_desp', JSON.stringify(categoriasDespesa)); } renderizarConfigCategorias(); renderizarTudo(); }
         }
 
-        async function salvarStorageAsync() {
-            await salvarDados(itens);
-            renderizarTudo();
-        }
+        async function salvarStorageAsync() { await salvarDados(itens); renderizarTudo(); }
 
         async function salvarItemForm(e) {
-            e.preventDefault();
-            const descBase = document.getElementById('desc').value;
-            const valorInformado = parseFloat(document.getElementById('valor').value);
-            const tipo = document.getElementById('tipo').value;
-            const categoria = document.getElementById('categoria').value;
-            const pagamento = (tipo === 'receita') ? 'Pix' : document.getElementById('pagamento').value;
-            const isRecorrente = document.getElementById('recorrente').checked;
-            const mesInicial = parseInt(document.getElementById('mes').value);
-            const anoInicial = parseInt(document.getElementById('anoInput').value);
+            e.preventDefault(); const descBase = document.getElementById('desc').value; const valorInformado = parseFloat(document.getElementById('valor').value); const tipo = document.getElementById('tipo').value; const categoria = document.getElementById('categoria').value; const pagamento = (tipo === 'receita') ? 'Pix' : document.getElementById('pagamento').value; const isRecorrente = document.getElementById('recorrente').checked; const mesInicial = parseInt(document.getElementById('mes').value); const anoInicial = parseInt(document.getElementById('anoInput').value);
+            let grupoId = 'grupo_' + Date.now() + '_' + Math.random(); let itensAnterioresParaManter = []; let qtdAnteriores = 0;
 
-            let grupoId = 'grupo_' + Date.now() + '_' + Math.random();
-            let itensAnterioresParaManter = [];
-            let qtdAnteriores = 0;
+            if (idEditando !== null) { const itemAntigo = itens.find(i => i.id === idEditando); if (itemAntigo && itemAntigo.grupoId) { grupoId = itemAntigo.grupoId; const grupoItens = itens.filter(i => i.grupoId === grupoId).sort((a, b) => (parseInt(a.ano)*100 + parseInt(a.mes)) - (parseInt(b.ano)*100 + parseInt(b.mes))); itensAnterioresParaManter = grupoItens.filter(i => (parseInt(i.ano)*100 + parseInt(i.mes)) < (anoInicial * 100 + mesInicial)); qtdAnteriores = itensAnterioresParaManter.length; itens = itens.filter(i => i.grupoId !== grupoId); } else if (itemAntigo) { itens = itens.filter(i => i.id !== idEditando); } }
 
-            if (idEditando !== null) {
-                const itemAntigo = itens.find(i => i.id === idEditando);
-                if (itemAntigo && itemAntigo.grupoId) {
-                    grupoId = itemAntigo.grupoId;
-                    const grupoItens = itens.filter(i => i.grupoId === grupoId).sort((a, b) => (parseInt(a.ano)*100 + parseInt(a.mes)) - (parseInt(b.ano)*100 + parseInt(b.mes)));
-                    itensAnterioresParaManter = grupoItens.filter(i => (parseInt(i.ano)*100 + parseInt(i.mes)) < (anoInicial * 100 + mesInicial));
-                    qtdAnteriores = itensAnterioresParaManter.length;
-                    itens = itens.filter(i => i.grupoId !== grupoId);
-                } else if (itemAntigo) {
-                    itens = itens.filter(i => i.id !== idEditando);
-                }
-            }
+            itensAnterioresParaManter.forEach(item => { item.categoria = categoria; item.tipo = tipo; item.pagamento = pagamento; }); itens.push(...itensAnterioresParaManter);
+            let numRepeticoes = isRecorrente ? (12 - mesInicial + 1) : ((tipo === 'despesa' && pagamento === 'Cartão') ? parseInt(document.getElementById('parcelas').value) : 1); const totalParcelasFinal = qtdAnteriores + numRepeticoes;
 
-            itensAnterioresParaManter.forEach(item => {
-                item.categoria = categoria;
-                item.tipo = tipo;
-                item.pagamento = pagamento;
-            });
-
-            itens.push(...itensAnterioresParaManter);
-            let numRepeticoes = isRecorrente ? (12 - mesInicial + 1) : ((tipo === 'despesa' && pagamento === 'Cartão') ? parseInt(document.getElementById('parcelas').value) : 1);
-            const totalParcelasFinal = qtdAnteriores + numRepeticoes;
-
-            for (let i = 0; i < numRepeticoes; i++) {
-                let mesCalc = mesInicial + i, anoCalc = anoInicial;
-                while (mesCalc > 12) { mesCalc -= 12; anoCalc += 1; }
-                let descFinal = descBase;
-                if (!isRecorrente && totalParcelasFinal > 1) descFinal = `${descBase} (${qtdAnteriores + i + 1}/${totalParcelasFinal}) [Parcela]`;
-                else if (isRecorrente) descFinal = `${descBase} (Recorrente)`;
-
+            for (let i = 0; i < numRepeticoes; i++) { let mesCalc = mesInicial + i, anoCalc = anoInicial; while (mesCalc > 12) { mesCalc -= 12; anoCalc += 1; } let descFinal = descBase; if (!isRecorrente && totalParcelasFinal > 1) descFinal = `${descBase} (${qtdAnteriores + i + 1}/${totalParcelasFinal}) [Parcela]`; else if (isRecorrente) descFinal = `${descBase} (Recorrente)`;
                 itens.push({ id: Date.now() + Math.random() + i, grupoId: grupoId, desc: descFinal, valor: valorInformado, tipo: tipo, categoria: categoria, pagamento: pagamento, mes: String(mesCalc).padStart(2, '0'), ano: String(anoCalc), status: 'efetivado' });
-            }
-            cancelarEdicao(); 
-            await salvarStorageAsync();
+            } cancelarEdicao(); await salvarStorageAsync();
         }
 
-        async function duplicarItem(id) {
-            const item = itens.find(i => i.id === id);
-            if (!item) return;
-            const novoItem = { ...item, id: Date.now() + Math.random(), grupoId: 'grupo_' + Date.now() + '_' + Math.random() };
-            novoItem.desc = !novoItem.desc.includes('(Cópia)') ? `${novoItem.desc} (Cópia)` : `${novoItem.desc} +`;
-            itens.push(novoItem); 
-            await salvarStorageAsync();
-        }
+        async function duplicarItem(id) { const item = itens.find(i => i.id === id); if (!item) return; const novoItem = { ...item, id: Date.now() + Math.random(), grupoId: 'grupo_' + Date.now() + '_' + Math.random() }; novoItem.desc = !novoItem.desc.includes('(Cópia)') ? `${novoItem.desc} (Cópia)` : `${novoItem.desc} +`; itens.push(novoItem); await salvarStorageAsync(); }
 
         function editarItem(id) {
-            const item = itens.find(i => i.id === id);
-            if (!item) return;
-            idEditando = id;
-            document.getElementById('tituloFormulario').textContent = "✏️ Editar Lançamento";
-            document.getElementById('btnSalvarForm').textContent = "Salvar Alterações";
-            document.getElementById('btnSalvarForm').className = "btn-success";
-            document.getElementById('btnCancelarEdicao').style.display = "block";
-            document.getElementById('desc').value = item.desc.replace(/ \(\d+\/\d+\) \[Parcela\]/, '').replace(/ \(Recorrente\)/, '');
-            document.getElementById('valor').value = item.valor;
-            document.getElementById('tipo').value = item.tipo;
-            atualizarCategoriasNoFormulario();
-            document.getElementById('categoria').value = item.categoria;
-            document.getElementById('pagamento').value = item.pagamento;
-            
-            const itensDoGrupo = item.grupoId ? itens.filter(i => i.grupoId === item.grupoId) : [];
-            let isRec = item.desc.includes('(Recorrente)');
-            document.getElementById('mes').value = item.mes;
-            document.getElementById('anoInput').value = item.ano;
-            document.getElementById('recorrente').checked = isRec;
+            const item = itens.find(i => i.id === id); if (!item) return; idEditando = id;
+            document.getElementById('tituloFormulario').innerHTML = "<span class=\"drag-handle\" title=\"Arraste para mover\">⣿</span> ✏️ Editar Lançamento"; document.getElementById('btnSalvarForm').textContent = "Salvar Alterações"; document.getElementById('btnSalvarForm').className = "btn-success"; document.getElementById('btnCancelarEdicao').style.display = "block";
+            document.getElementById('desc').value = item.desc.replace(/ \(\d+\/\d+\) \[Parcela\]/, '').replace(/ \(Recorrente\)/, ''); document.getElementById('valor').value = item.valor; document.getElementById('tipo').value = item.tipo; atualizarCategoriasNoFormulario(); document.getElementById('categoria').value = item.categoria; document.getElementById('pagamento').value = item.pagamento;
+            const itensDoGrupo = item.grupoId ? itens.filter(i => i.grupoId === item.grupoId) : []; let isRec = item.desc.includes('(Recorrente)');
+            document.getElementById('mes').value = item.mes; document.getElementById('anoInput').value = item.ano; document.getElementById('recorrente').checked = isRec;
             if (item.pagamento === 'Cartão' && !isRec) document.getElementById('parcelas').value = (itensDoGrupo.length > 1 && itensDoGrupo.length <= 12) ? String(itensDoGrupo.length) : "1";
             toggleTipoForm(); mudarAba('matriz'); document.getElementById('formItem').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function cancelarEdicao() {
-            idEditando = null;
-            document.getElementById('tituloFormulario').textContent = "✨ Novo Lançamento 🖱️";
-            document.getElementById('btnSalvarForm').textContent = "Adicionar";
-            document.getElementById('btnSalvarForm').className = "btn-add";
-            document.getElementById('btnCancelarEdicao').style.display = "none";
-            document.getElementById('desc').value = ''; document.getElementById('valor').value = '';
-            document.getElementById('recorrente').checked = false; toggleTipoForm(); document.getElementById('desc').focus();
-        }
+        function cancelarEdicao() { idEditando = null; document.getElementById('tituloFormulario').innerHTML = "<span class=\"drag-handle\" title=\"Arraste para mover\">⣿</span> ✨ Novo Lançamento 🖱️"; document.getElementById('btnSalvarForm').textContent = "Adicionar"; document.getElementById('btnSalvarForm').className = "btn-add"; document.getElementById('btnCancelarEdicao').style.display = "none"; document.getElementById('desc').value = ''; document.getElementById('valor').value = ''; document.getElementById('recorrente').checked = false; toggleTipoForm(); document.getElementById('desc').focus(); }
 
         async function excluirItem(id, grupoId) {
             const itensDoGrupo = grupoId ? itens.filter(i => i.grupoId === grupoId) : [];
-            if (itensDoGrupo.length > 1) {
-                if (confirm("Este item faz parte de um parcelamento ou recorrência.\n\nDeseja apagar TODOS os meses desta compra?\n• [OK] Apaga todos\n• [Cancelar] Apaga APENAS este mês")) itens = itens.filter(item => item.grupoId !== grupoId);
-                else itens = itens.filter(item => item.id !== id);
-            } else if (confirm("Deseja apagar este lançamento?")) itens = itens.filter(item => item.id !== id);
-            await salvarStorageAsync();
+            if (itensDoGrupo.length > 1) { if (confirm("Este item faz parte de um parcelamento ou recorrência.\n\nDeseja apagar TODOS os meses desta compra?\n• [OK] Apaga todos\n• [Cancelar] Apaga APENAS este mês")) itens = itens.filter(item => item.grupoId !== grupoId); else itens = itens.filter(item => item.id !== id); } else if (confirm("Deseja apagar este lançamento?")) itens = itens.filter(item => item.id !== id); await salvarStorageAsync();
         }
 
-        function fazerBackup() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(itens, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", "financas_pessoais_backup.json");
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-        }
-
-        function restaurarBackup(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const dadosRestaurados = JSON.parse(e.target.result);
-                    if (Array.isArray(dadosRestaurados)) {
-                        itens = dadosRestaurados;
-                        await salvarStorageAsync();
-                        alert("Backup restaurado com sucesso!");
-                    } else {
-                        alert("Arquivo de backup inválido.");
-                    }
-                } catch (err) {
-                    alert("Erro ao ler o arquivo JSON.");
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        async function limparTudo() {
-            if (confirm("Tem certeza que deseja apagar TODOS os lançamentos?")) {
-                itens = [];
-                await salvarStorageAsync();
-            }
-        }
+        function fazerBackup() { const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(itens, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "financas_pessoais_backup.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); }
+        function restaurarBackup(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async function(e) { try { const dadosRestaurados = JSON.parse(e.target.result); if (Array.isArray(dadosRestaurados)) { itens = dadosRestaurados; await salvarStorageAsync(); alert("Backup restaurado!"); } else alert("Arquivo inválido."); } catch (err) { alert("Erro ao ler arquivo."); } }; reader.readAsText(file); }
+        async function limparTudo() { if (confirm("Tem certeza que deseja apagar TODOS os lançamentos?")) { itens = []; await salvarStorageAsync(); } }
 
         function renderizarTudo() {
-            const anoSelecionado = document.getElementById('anoDashboard').value;
-            const mesSelecionado = document.getElementById('mesDashboard').value;
-            const pagamentoSelecionado = document.getElementById('pagamentoDashboard').value;
-            const categoriaSelecionada = document.getElementById('categoriaDashboard').value;
-            renderizarConfigCategorias();
-
-            let dadosAno = itens.filter(i => String(i.ano) === String(anoSelecionado));
-            let dadosFiltrados = dadosAno.filter(i => (mesSelecionado === 'todos' || i.mes === mesSelecionado) && (pagamentoSelecionado === 'todos' || i.pagamento === pagamentoSelecionado) && (categoriaSelecionada === 'todas' || i.categoria === categoriaSelecionada));
+            const anoSelecionado = document.getElementById('anoDashboard').value; const mesSelecionado = document.getElementById('mesDashboard').value; const pagamentoSelecionado = document.getElementById('pagamentoDashboard').value; const categoriaSelecionada = document.getElementById('categoriaDashboard').value; renderizarConfigCategorias();
+            let dadosAno = itens.filter(i => String(i.ano) === String(anoSelecionado)); 
+            let dadosFiltrados = dadosAno.filter(i => (mesSelecionado === 'todos' || i.mes === mesSelecionado) && (pagamentoSelecionado === 'todos' || i.pagamento === pagamentoSelecionado) && (categoriaSelecionada === 'todas' || i.categoria === categoriaSelecionada)); 
             let dadosExtrato = drillDownFiltro ? dadosAno.filter(i => i.mes === drillDownFiltro.mes && i.categoria === drillDownFiltro.categoria && (pagamentoSelecionado === 'todos' || i.pagamento === pagamentoSelecionado)) : dadosFiltrados;
 
-            const termoBusca = document.getElementById('buscaExtrato') ? document.getElementById('buscaExtrato').value.trim().toLowerCase() : '';
-            const buscarEmTudo = document.getElementById('buscarEmTudo') ? document.getElementById('buscarEmTudo').checked : false;
-            if (termoBusca) {
-                dadosExtrato = (buscarEmTudo ? itens : dadosExtrato).filter(i => i.desc.toLowerCase().includes(termoBusca) || i.categoria.toLowerCase().includes(termoBusca));
+            const termoBusca = document.getElementById('buscaExtrato') ? document.getElementById('buscaExtrato').value.trim().toLowerCase() : ''; 
+            const buscarEmTudo = document.getElementById('buscarEmTudo') ? document.getElementById('buscarEmTudo').checked : false; 
+            if (termoBusca) { dadosExtrato = (buscarEmTudo ? itens : dadosExtrato).filter(i => i.desc.toLowerCase().includes(termoBusca) || i.categoria.toLowerCase().includes(termoBusca)); }
+
+            // APLICAÇÃO DOS FILTROS ESPECÍFICOS DE COLUNA DO EXTRATO
+            let filtrosAtivosTxt = [];
+            if (columnFilters.desc) { dadosExtrato = dadosExtrato.filter(i => i.desc.toLowerCase().includes(columnFilters.desc.toLowerCase())); filtrosAtivosTxt.push(`Descrição: "${columnFilters.desc}"`); }
+            if (columnFilters.data) { dadosExtrato = dadosExtrato.filter(i => `${i.mes}/${i.ano}`.includes(columnFilters.data) || nomesMeses[i.mes]?.toLowerCase().includes(columnFilters.data.toLowerCase())); filtrosAtivosTxt.push(`Data: "${columnFilters.data}"`); }
+            if (columnFilters.categoria !== 'todas') { dadosExtrato = dadosExtrato.filter(i => i.categoria === columnFilters.categoria); filtrosAtivosTxt.push(`Categoria: "${columnFilters.categoria}"`); }
+            if (columnFilters.pagamento !== 'todos') { dadosExtrato = dadosExtrato.filter(i => i.pagamento === columnFilters.pagamento); filtrosAtivosTxt.push(`Pagamento: "${columnFilters.pagamento}"`); }
+            if (columnFilters.tipo !== 'todos') { dadosExtrato = dadosExtrato.filter(i => i.tipo === columnFilters.tipo); filtrosAtivosTxt.push(`Tipo: "${columnFilters.tipo.toUpperCase()}"`); }
+            if (columnFilters.valorMin !== '') { const vMin = parseFloat(columnFilters.valorMin); if(!isNaN(vMin)) { dadosExtrato = dadosExtrato.filter(i => i.valor >= vMin); filtrosAtivosTxt.push(`Mín: R$${vMin}`); } }
+            if (columnFilters.valorMax !== '') { const vMax = parseFloat(columnFilters.valorMax); if(!isNaN(vMax)) { dadosExtrato = dadosExtrato.filter(i => i.valor <= vMax); filtrosAtivosTxt.push(`Máx: R$${vMax}`); } }
+
+            // Atualiza barra indicadora de filtros ativos
+            const painelFiltros = document.getElementById('painelFiltrosAtivos');
+            if (filtrosAtivosTxt.length > 0) {
+                painelFiltros.style.display = 'flex';
+                document.getElementById('textoFiltrosAtivos').innerHTML = `🔍 <b>Filtros de Coluna Ativos:</b> ${filtrosAtivosTxt.join(' | ')}`;
+            } else {
+                painelFiltros.style.display = 'none';
             }
 
+            // ORDENAÇÃO PELOS TÍTULOS DE COLUNAS DO EXTRATO
             if (sortExtratoField) {
                 dadosExtrato.sort((a, b) => {
                     let valA = a[sortExtratoField], valB = b[sortExtratoField];
-                    if (sortExtratoField === 'data') return sortExtratoDir === 'asc' ? a.id - b.id : b.id - a.id;
+                    if (sortExtratoField === 'data' || sortExtratoField === 'id') return sortExtratoDir === 'asc' ? a.id - b.id : b.id - a.id;
                     if (sortExtratoField === 'valor') return sortExtratoDir === 'asc' ? a.valor - b.valor : b.valor - a.valor;
                     if (typeof valA === 'string') return sortExtratoDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
                     return 0;
                 });
             } else {
                 let manualOrder = JSON.parse(localStorage.getItem('finanpro_extrato_manual_ordem')) || [];
-                if (manualOrder.length > 0) {
-                    dadosExtrato.sort((a, b) => {
-                        let idxA = manualOrder.indexOf(a.id);
-                        let idxB = manualOrder.indexOf(b.id);
-                        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-                        if (idxA !== -1) return -1;
-                        if (idxB !== -1) return 1;
-                        return a.id - b.id;
-                    });
-                } else {
-                    dadosExtrato.sort((a, b) => a.id - b.id);
-                }
+                if (manualOrder.length > 0) { dadosExtrato.sort((a, b) => { let idxA = manualOrder.indexOf(a.id); let idxB = manualOrder.indexOf(b.id); if (idxA !== -1 && idxB !== -1) return idxA - idxB; if (idxA !== -1) return -1; if (idxB !== -1) return 1; return a.id - b.id; }); } else { dadosExtrato.sort((a, b) => a.id - b.id); }
             }
 
-            let totalRec = 0, totalDesp = 0;
-            dadosFiltrados.forEach(i => { if (i.tipo === 'receita') totalRec += i.valor; if (i.tipo === 'despesa') totalDesp += i.valor; });
-            const saldoPeriodo = totalRec - totalDesp;
-            document.getElementById('kpiReceitas').textContent = `R$ ${totalRec.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            document.getElementById('kpiDespesas').textContent = `R$ ${totalDesp.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            const kpiSaldo = document.getElementById('kpiSaldo');
-            kpiSaldo.textContent = `R$ ${saldoPeriodo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-            kpiSaldo.className = 'kpi-value ' + (saldoPeriodo >= 0 ? 'saldo-positivo' : 'saldo-negativo');
+            let totalRec = 0, totalDesp = 0; dadosFiltrados.forEach(i => { if (i.tipo === 'receita') totalRec += i.valor; if (i.tipo === 'despesa') totalDesp += i.valor; }); const saldoPeriodo = totalRec - totalDesp;
+            document.getElementById('kpiReceitas').textContent = `R$ ${totalRec.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`; document.getElementById('kpiDespesas').textContent = `R$ ${totalDesp.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`; const kpiSaldo = document.getElementById('kpiSaldo'); kpiSaldo.textContent = `R$ ${saldoPeriodo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`; kpiSaldo.className = 'kpi-value ' + (saldoPeriodo >= 0 ? 'saldo-positivo' : 'saldo-negativo');
 
-            // 1. Fluxo
-            if (chartFluxoInstance) chartFluxoInstance.destroy();
-            const recMeses = Array(12).fill(0), despMeses = Array(12).fill(0), saldoMeses = Array(12).fill(0);
-            dadosAno.filter(i => pagamentoSelecionado === 'todos' || i.pagamento === pagamentoSelecionado).forEach(i => {
-                const idx = mesesKeys.indexOf(i.mes);
-                if (idx !== -1) { if (i.tipo === 'receita') recMeses[idx] += i.valor; if (i.tipo === 'despesa') despMeses[idx] += i.valor; }
-            });
-            for (let i = 0; i < 12; i++) saldoMeses[i] = recMeses[i] - despMeses[i];
-            chartFluxoInstance = new Chart(document.getElementById('chartFluxoConsolidado'), {
-                type: 'bar',
-                data: { labels: mesesNomesArray, datasets: [ { label: 'Entradas', data: recMeses, backgroundColor: '#10b981', borderRadius: 4 }, { label: 'Despesas', data: despMeses, backgroundColor: '#f43f5e', borderRadius: 4 }, { label: 'Saldo', data: saldoMeses, type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.3 } ] },
-                options: darkChartOptions
-            });
-
-            // 2. Top Entradas
-            if (chartTopEntradasInstance) chartTopEntradasInstance.destroy();
-            const catEntradasMap = {};
-            dadosFiltrados.filter(i => i.tipo === 'receita' && i.valor > 0).forEach(i => { catEntradasMap[i.categoria] = (catEntradasMap[i.categoria] || 0) + i.valor; });
-            const topEntradasOrdenadas = Object.entries(catEntradasMap).filter(item => item[1] > 0).sort((a,b) => b[1] - a[1]).slice(0, 8);
-            chartTopEntradasInstance = new Chart(document.getElementById('chartTopEntradas'), {
-                type: 'bar',
-                data: { labels: topEntradasOrdenadas.length ? topEntradasOrdenadas.map(i => i[0]) : ['Sem Dados'], datasets: [{ label: 'Entradas (R$)', data: topEntradasOrdenadas.length ? topEntradasOrdenadas.map(i => i[1]) : [0], backgroundColor: '#10b981', borderRadius: 6 }] },
-                options: darkChartOptionsHorizontal
-            });
-
-            // 3. Doughnut Entradas
-            if (chartEntradasDoughnutInstance) chartEntradasDoughnutInstance.destroy();
-            let doughnutEntradasLabels = [], doughnutEntradasData = [];
-            const coresReceitaPaleta = ['#10b981', '#06b6d4', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
-            const entradasCatOriginalMap = {};
-            dadosFiltrados.filter(i => i.tipo === 'receita' && i.valor > 0).forEach(i => { entradasCatOriginalMap[i.categoria] = (entradasCatOriginalMap[i.categoria] || 0) + i.valor; });
-            if (categoriaFocoEntradas) {
-                const itensDaCat = dadosFiltrados.filter(i => i.categoria === categoriaFocoEntradas && i.tipo === 'receita' && i.valor > 0);
-                doughnutEntradasLabels = itensDaCat.length ? itensDaCat.map(i => `${i.desc} (${nomesMeses[i.mes].slice(0,3)})`) : ['Sem Itens'];
-                doughnutEntradasData = itensDaCat.length ? itensDaCat.map(i => i.valor) : [1];
-                document.getElementById('tituloDoughnutEntradas').innerHTML = `Entradas: <span style="color: #10b981;">${categoriaFocoEntradas}</span> (Clique p/ voltar)`;
-            } else {
-                const list = Object.keys(entradasCatOriginalMap);
-                doughnutEntradasLabels = list.length ? list : ['Sem Entradas'];
-                doughnutEntradasData = list.length ? list.map(c => entradasCatOriginalMap[c]) : [1];
-                document.getElementById('tituloDoughnutEntradas').innerHTML = `Distribuição de Entradas - <i>Clique para ver itens</i>`;
-            }
-            chartEntradasDoughnutInstance = new Chart(document.getElementById('chartEntradasDoughnut'), {
-                type: 'doughnut', data: { labels: doughnutEntradasLabels, datasets: [{ data: doughnutEntradasData, backgroundColor: coresReceitaPaleta, borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10 } } }, onClick: (event, el) => { if (categoriaFocoEntradas) { categoriaFocoEntradas = null; renderizarTudo(); } else if (el.length > 0) { const cat = doughnutEntradasLabels[el[0].index]; if (cat && cat !== 'Sem Entradas') { categoriaFocoEntradas = cat; renderizarTudo(); } } } }
-            });
-
-            // 4. Top Categorias
-            if (chartTopCatInstance) chartTopCatInstance.destroy();
-            const catGastosMap = {};
-            dadosFiltrados.filter(i => i.tipo === 'despesa' && i.valor > 0).forEach(i => { catGastosMap[i.categoria] = (catGastosMap[i.categoria] || 0) + i.valor; });
-            const topCategoriasOrdenadas = Object.entries(catGastosMap).filter(item => item[1] > 0).sort((a,b) => b[1] - a[1]).slice(0, 8);
-            chartTopCatInstance = new Chart(document.getElementById('chartTopCategorias'), {
-                type: 'bar', data: { labels: topCategoriasOrdenadas.length ? topCategoriasOrdenadas.map(i => i[0]) : ['Sem Dados'], datasets: [{ label: 'Gasto (R$)', data: topCategoriasOrdenadas.length ? topCategoriasOrdenadas.map(i => i[1]) : [0], backgroundColor: '#8b5cf6', borderRadius: 6 }] },
-                options: darkChartOptionsHorizontal
-            });
-
-            // 5. Top Itens
-            if (chartTopItensInstance) chartTopItensInstance.destroy();
-            const itensTopGastos = [...dadosFiltrados.filter(i => i.tipo === 'despesa' && i.valor > 0)].sort((a,b) => b.valor - a.valor).slice(0, 8);
-            chartTopItensInstance = new Chart(document.getElementById('chartTopItens'), {
-                type: 'bar', data: { labels: itensTopGastos.length ? itensTopGastos.map(i => `${i.desc} (${i.categoria})`) : ['Sem Registros'], datasets: [{ label: 'Valor (R$)', data: itensTopGastos.length ? itensTopGastos.map(i => i.valor) : [0], backgroundColor: '#06b6d4', borderRadius: 6 }] },
-                options: darkChartOptionsHorizontal
-            });
-
-            // 6. Evolução Mensal
-            if (chartEvolucaoCatInstance) chartEvolucaoCatInstance.destroy();
-            const datasetsEvolucao = [];
-            const coresPaleta = ['#f43f5e', '#a855f7', '#06b6d4', '#f59e0b', '#ec4899', '#6366f1', '#10b981', '#3b82f6'];
-            let corIndex = 0;
-            categoriasDespesa.forEach(cat => {
-                if (categoriaSelecionada !== 'todas' && categoriaSelecionada !== cat) return;
-                const valsCat = Array(12).fill(0);
-                dadosAno.filter(i => i.tipo === 'despesa' && i.categoria === cat && (pagamentoSelecionado === 'todos' || i.pagamento === pagamentoSelecionado)).forEach(i => {
-                    const idx = mesesKeys.indexOf(i.mes); if (idx !== -1) valsCat[idx] += i.valor;
-                });
-                if (valsCat.reduce((a, b) => a + b, 0) > 0) {
-                    let corCat = cat === 'Investimentos' ? '#06b6d4' : coresPaleta[corIndex % coresPaleta.length];
-                    datasetsEvolucao.push({ label: cat, data: valsCat, borderColor: corCat, backgroundColor: corCat, tension: 0.3, borderWidth: 3, pointRadius: 4, pointHoverRadius: 7 });
-                    corIndex++;
-                }
-            });
-            chartEvolucaoCatInstance = new Chart(document.getElementById('chartEvolucaoCat'), {
-                type: 'line', data: { labels: mesesNomesArray, datasets: datasetsEvolucao.length ? datasetsEvolucao : [{ label: 'Sem dados', data: Array(12).fill(0), borderColor: '#94a3b8' }] },
-                options: darkChartOptions
-            });
-
-            // 7. Doughnut Gastos
-            if (chartGastosDoughnutInstance) chartGastosDoughnutInstance.destroy();
-            let doughnutGastosLabels = [], doughnutGastosData = [];
-            const gastosCatOriginalMap = {};
-            dadosFiltrados.filter(i => i.tipo === 'despesa' && i.valor > 0).forEach(i => { gastosCatOriginalMap[i.categoria] = (gastosCatOriginalMap[i.categoria] || 0) + i.valor; });
-            if (categoriaFocoGastos) {
-                const itensDaCat = dadosFiltrados.filter(i => i.categoria === categoriaFocoGastos && i.tipo === 'despesa' && i.valor > 0);
-                doughnutGastosLabels = itensDaCat.length ? itensDaCat.map(i => `${i.desc} (${nomesMeses[i.mes].slice(0,3)})`) : ['Sem Itens'];
-                doughnutGastosData = itensDaCat.length ? itensDaCat.map(i => i.valor) : [1];
-                document.getElementById('tituloDoughnutGastos').innerHTML = `Gastos: <span style="color: #c084fc;">${categoriaFocoGastos}</span> (Clique p/ voltar)`;
-            } else {
-                const list = Object.keys(gastosCatOriginalMap);
-                doughnutGastosLabels = list.length ? list : ['Sem Despesas'];
-                doughnutGastosData = list.length ? list.map(c => gastosCatOriginalMap[c]) : [1];
-                document.getElementById('tituloDoughnutGastos').innerHTML = `Distribuição de Gastos - <i>Clique para ver itens</i>`;
-            }
-            chartGastosDoughnutInstance = new Chart(document.getElementById('chartGastosDoughnut'), {
-                type: 'doughnut', data: { labels: doughnutGastosLabels, datasets: [{ data: doughnutGastosData, backgroundColor: coresPaleta, borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10 } } }, onClick: (event, el) => { if (categoriaFocoGastos) { categoriaFocoGastos = null; renderizarTudo(); } else if (el.length > 0) { const cat = doughnutGastosLabels[el[0].index]; if (cat && cat !== 'Sem Despesas') { categoriaFocoGastos = cat; renderizarTudo(); } } } }
-            });
-
-            // 8. Pix vs Cartão
-            if (chartPixVsCartaoInstance) chartPixVsCartaoInstance.destroy();
-            const pixMeses = Array(12).fill(0), cartaoMeses = Array(12).fill(0);
-            dadosAno.filter(i => i.tipo === 'despesa').forEach(i => {
-                const idx = mesesKeys.indexOf(i.mes);
-                if (idx !== -1) { if (i.pagamento === 'Pix') pixMeses[idx] += i.valor; if (i.pagamento === 'Cartão') cartaoMeses[idx] += i.valor; }
-            });
-            chartPixVsCartaoInstance = new Chart(document.getElementById('chartPixVsCartao'), {
-                type: 'bar', data: { labels: mesesNomesArray, datasets: [ { label: 'Pix', data: pixMeses, backgroundColor: '#06b6d4', borderRadius: 4 }, { label: 'Cartão', data: cartaoMeses, backgroundColor: '#a855f7', borderRadius: 4 } ] },
-                options: darkChartOptions
-            });
+            // GRAFICOS DASHBOARD
+            if (chartFluxoInstance) chartFluxoInstance.destroy(); const recMeses = Array(12).fill(0), despMeses = Array(12).fill(0), saldoMeses = Array(12).fill(0); dadosAno.filter(i => pagamentoSelecionado === 'todos' || i.pagamento === pagamentoSelecionado).forEach(i => { const idx = mesesKeys.indexOf(i.mes); if (idx !== -1) { if (i.tipo === 'receita') recMeses[idx] += i.valor; if (i.tipo === 'despesa') despMeses[idx] += i.valor; } }); for (let i = 0; i < 12; i++) saldoMeses[i] = recMeses[i] - despMeses[i]; chartFluxoInstance = new Chart(document.getElementById('chartFluxoConsolidado'), { type: 'bar', data: { labels: mesesNomesArray, datasets: [ { label: 'Entradas', data: recMeses, backgroundColor: '#10b981', borderRadius: 4 }, { label: 'Despesas', data: despMeses, backgroundColor: '#f43f5e', borderRadius: 4 }, { label: 'Saldo', data: saldoMeses, type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.3 } ] }, options: darkChartOptions });
+            if (chartTopEntradasInstance) chartTopEntradasInstance.destroy(); const catEntradasMap = {}; dadosFiltrados.filter(i => i.tipo === 'receita' && i.valor > 0).forEach(i => { catEntradasMap[i.categoria] = (catEntradasMap[i.categoria] || 0) + i.valor; }); const topEntradasOrdenadas = Object.entries(catEntradasMap).filter(item => item[1] > 0).sort((a,b) => b[1] - a[1]).slice(0, 8); chartTopEntradasInstance = new Chart(document.getElementById('chartTopEntradas'), { type: 'bar', data: { labels: topEntradasOrdenadas.length ? topEntradasOrdenadas.map(i => i[0]) : ['Sem Dados'], datasets: [{ label: 'Entradas (R$)', data: topEntradasOrdenadas.length ? topEntradasOrdenadas.map(i => i[1]) : [0], backgroundColor: '#10b981', borderRadius: 6 }] }, options: darkChartOptionsHorizontal });
+            if (chartEntradasDoughnutInstance) chartEntradasDoughnutInstance.destroy(); let doughnutEntradasLabels = [], doughnutEntradasData = []; const coresReceitaPaleta = ['#10b981', '#06b6d4', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899']; const entradasCatOriginalMap = {}; dadosFiltrados.filter(i => i.tipo === 'receita' && i.valor > 0).forEach(i => { entradasCatOriginalMap[i.categoria] = (entradasCatOriginalMap[i.categoria] || 0) + i.valor; }); if (categoriaFocoEntradas) { const itensDaCat = dadosFiltrados.filter(i => i.categoria === categoriaFocoEntradas && i.tipo === 'receita' && i.valor > 0); doughnutEntradasLabels = itensDaCat.length ? itensDaCat.map(i => `${i.desc} (${nomesMeses[i.mes].slice(0,3)})`) : ['Sem Itens']; doughnutEntradasData = itensDaCat.length ? itensDaCat.map(i => i.valor) : [1]; document.getElementById('tituloDoughnutEntradas').innerHTML = `<span class="drag-handle" title="Arraste para mover">⣿</span> Entradas: <span style="color: #10b981;">${categoriaFocoEntradas}</span> (Clique p/ voltar)`; } else { const list = Object.keys(entradasCatOriginalMap); doughnutEntradasLabels = list.length ? list : ['Sem Entradas']; doughnutEntradasData = list.length ? list.map(c => entradasCatOriginalMap[c]) : [1]; document.getElementById('tituloDoughnutEntradas').innerHTML = `<span class="drag-handle" title="Arraste para mover">⣿</span> Distribuição de Entradas - <i>Clique para ver itens</i>`; } chartEntradasDoughnutInstance = new Chart(document.getElementById('chartEntradasDoughnut'), { type: 'doughnut', data: { labels: doughnutEntradasLabels, datasets: [{ data: doughnutEntradasData, backgroundColor: coresReceitaPaleta, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10 } } }, onClick: (event, el) => { if (categoriaFocoEntradas) { categoriaFocoEntradas = null; renderizarTudo(); } else if (el.length > 0) { const cat = doughnutEntradasLabels[el[0].index]; if (cat && cat !== 'Sem Entradas') { categoriaFocoEntradas = cat; renderizarTudo(); } } } } });
+            if (chartTopCatInstance) chartTopCatInstance.destroy(); const catGastosMap = {}; dadosFiltrados.filter(i => i.tipo === 'despesa' && i.valor > 0).forEach(i => { catGastosMap[i.categoria] = (catGastosMap[i.categoria] || 0) + i.valor; }); const topCategoriasOrdenadas = Object.entries(catGastosMap).filter(item => item[1] > 0).sort((a,b) => b[1] - a[1]).slice(0, 8); chartTopCatInstance = new Chart(document.getElementById('chartTopCategorias'), { type: 'bar', data: { labels: topCategoriasOrdenadas.length ? topCategoriasOrdenadas.map(i => i[0]) : ['Sem Dados'], datasets: [{ label: 'Gasto (R$)', data: topCategoriasOrdenadas.length ? topCategoriasOrdenadas.map(i => i[1]) : [0], backgroundColor: '#8b5cf6', borderRadius: 6 }] }, options: darkChartOptionsHorizontal });
+            if (chartTopItensInstance) chartTopItensInstance.destroy(); const itensTopGastos = [...dadosFiltrados.filter(i => i.tipo === 'despesa' && i.valor > 0)].sort((a,b) => b.valor - a.valor).slice(0, 8); chartTopItensInstance = new Chart(document.getElementById('chartTopItens'), { type: 'bar', data: { labels: itensTopGastos.length ? itensTopGastos.map(i => `${i.desc} (${i.categoria})`) : ['Sem Registros'], datasets: [{ label: 'Valor (R$)', data: itensTopGastos.length ? itensTopGastos.map(i => i.valor) : [0], backgroundColor: '#06b6d4', borderRadius: 6 }] }, options: darkChartOptionsHorizontal });
+            if (chartEvolucaoCatInstance) chartEvolucaoCatInstance.destroy(); const datasetsEvolucao = []; const coresPaleta = ['#f43f5e', '#a855f7', '#06b6d4', '#f59e0b', '#ec4899', '#6366f1', '#10b981', '#3b82f6']; let corIndex = 0; categoriasDespesa.forEach(cat => { if (categoriaSelecionada !== 'todas' && categoriaSelecionada !== cat) return; const valsCat = Array(12).fill(0); dadosAno.filter(i => i.tipo === 'despesa' && i.categoria === cat && (pagamentoSelecionado === 'todos' || i.pagamento === pagamentoSelecionado)).forEach(i => { const idx = mesesKeys.indexOf(i.mes); if (idx !== -1) valsCat[idx] += i.valor; }); if (valsCat.reduce((a, b) => a + b, 0) > 0) { let corCat = cat === 'Investimentos' ? '#06b6d4' : coresPaleta[corIndex % coresPaleta.length]; datasetsEvolucao.push({ label: cat, data: valsCat, borderColor: corCat, backgroundColor: corCat, tension: 0.3, borderWidth: 3, pointRadius: 4, pointHoverRadius: 7 }); corIndex++; } }); chartEvolucaoCatInstance = new Chart(document.getElementById('chartEvolucaoCat'), { type: 'line', data: { labels: mesesNomesArray, datasets: datasetsEvolucao.length ? datasetsEvolucao : [{ label: 'Sem dados', data: Array(12).fill(0), borderColor: '#94a3b8' }] }, options: darkChartOptions });
+            if (chartGastosDoughnutInstance) chartGastosDoughnutInstance.destroy(); let doughnutGastosLabels = [], doughnutGastosData = []; const gastosCatOriginalMap = {}; dadosFiltrados.filter(i => i.tipo === 'despesa' && i.valor > 0).forEach(i => { gastosCatOriginalMap[i.categoria] = (gastosCatOriginalMap[i.categoria] || 0) + i.valor; }); if (categoriaFocoGastos) { const itensDaCat = dadosFiltrados.filter(i => i.categoria === categoriaFocoGastos && i.tipo === 'despesa' && i.valor > 0); doughnutGastosLabels = itensDaCat.length ? itensDaCat.map(i => `${i.desc} (${nomesMeses[i.mes].slice(0,3)})`) : ['Sem Itens']; doughnutGastosData = itensDaCat.length ? itensDaCat.map(i => i.valor) : [1]; document.getElementById('tituloDoughnutGastos').innerHTML = `<span class="drag-handle" title="Arraste para mover">⣿</span> Gastos: <span style="color: #c084fc;">${categoriaFocoGastos}</span> (Clique p/ voltar)`; } else { const list = Object.keys(gastosCatOriginalMap); doughnutGastosLabels = list.length ? list : ['Sem Despesas']; doughnutGastosData = list.length ? list.map(c => gastosCatOriginalMap[c]) : [1]; document.getElementById('tituloDoughnutGastos').innerHTML = `<span class="drag-handle" title="Arraste para mover">⣿</span> Distribuição de Gastos - <i>Clique para ver itens</i>`; } chartGastosDoughnutInstance = new Chart(document.getElementById('chartGastosDoughnut'), { type: 'doughnut', data: { labels: doughnutGastosLabels, datasets: [{ data: doughnutGastosData, backgroundColor: coresPaleta, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10 } } }, onClick: (event, el) => { if (categoriaFocoGastos) { categoriaFocoGastos = null; renderizarTudo(); } else if (el.length > 0) { const cat = doughnutGastosLabels[el[0].index]; if (cat && cat !== 'Sem Despesas') { categoriaFocoGastos = cat; renderizarTudo(); } } } } });
+            if (chartPixVsCartaoInstance) chartPixVsCartaoInstance.destroy(); const pixMeses = Array(12).fill(0), cartaoMeses = Array(12).fill(0); dadosAno.filter(i => i.tipo === 'despesa').forEach(i => { const idx = mesesKeys.indexOf(i.mes); if (idx !== -1) { if (i.pagamento === 'Pix') pixMeses[idx] += i.valor; if (i.pagamento === 'Cartão') cartaoMeses[idx] += i.valor; } }); chartPixVsCartaoInstance = new Chart(document.getElementById('chartPixVsCartao'), { type: 'bar', data: { labels: mesesNomesArray, datasets: [ { label: 'Pix', data: pixMeses, backgroundColor: '#06b6d4', borderRadius: 4 }, { label: 'Cartão', data: cartaoMeses, backgroundColor: '#a855f7', borderRadius: 4 } ] }, options: darkChartOptions });
 
             renderizarHeatmap(dadosAno, pagamentoSelecionado);
             renderizarMatriz(dadosAno, pagamentoSelecionado);
@@ -1537,27 +1389,11 @@
         }
 
         function renderizarHeatmap(dadosAno, pagamentoFiltro) {
-            const tbodyHeatmap = document.getElementById('tbodyHeatmap'); tbodyHeatmap.innerHTML = '';
-            let maxValor = 1;
+            const tbodyHeatmap = document.getElementById('tbodyHeatmap'); tbodyHeatmap.innerHTML = ''; let maxValor = 1;
+            categoriasDespesa.forEach(cat => { mesesKeys.forEach(mKey => { let soma = 0; dadosAno.filter(i => i.tipo === 'despesa' && i.categoria === cat && i.mes === mKey && (pagamentoFiltro === 'todos' || i.pagamento === pagamentoFiltro)).forEach(i => { soma += i.valor; }); if (soma > maxValor) maxValor = soma; }); });
             categoriasDespesa.forEach(cat => {
-                mesesKeys.forEach(mKey => {
-                    let soma = 0;
-                    dadosAno.filter(i => i.tipo === 'despesa' && i.categoria === cat && i.mes === mKey && (pagamentoFiltro === 'todos' || i.pagamento === pagamentoFiltro)).forEach(i => { soma += i.valor; });
-                    if (soma > maxValor) maxValor = soma;
-                });
-            });
-            categoriasDespesa.forEach(cat => {
-                let tr = document.createElement('tr');
-                let htmlTd = `<td style="font-weight: 600;">${cat === 'Investimentos' ? '🔵 ' + cat : cat}</td>`;
-                let temDespesaNaCat = false, celsHtml = '';
-                mesesKeys.forEach(mKey => {
-                    let val = 0;
-                    dadosAno.filter(i => i.tipo === 'despesa' && i.categoria === cat && i.mes === mKey && (pagamentoFiltro === 'todos' || i.pagamento === pagamentoFiltro)).forEach(i => { val += i.valor; });
-                    if (val > 0) temDespesaNaCat = true;
-                    let baseColorR = cat === 'Investimentos' ? '6, 182, 212' : '244, 63, 94';
-                    let intensidade = val > 0 ? Math.max(0.15, Math.min(0.9, val / maxValor)) : 0;
-                    celsHtml += `<td><div class="heatmap-cell" style="background: ${val > 0 ? `rgba(${baseColorR}, ${intensidade})` : 'rgba(255, 255, 255, 0.01)'}; color: ${val > 0 ? '#fff' : 'var(--text-muted)'};" onclick="acionarDrillDown('${mKey}', '${cat}')">${val > 0 ? 'R$ ' + val.toLocaleString('pt-BR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '-'}</div></td>`;
-                });
+                let tr = document.createElement('tr'); let htmlTd = `<td style="font-weight: 600;">${cat === 'Investimentos' ? '🔵 ' + cat : cat}</td>`; let temDespesaNaCat = false, celsHtml = '';
+                mesesKeys.forEach(mKey => { let val = 0; dadosAno.filter(i => i.tipo === 'despesa' && i.categoria === cat && i.mes === mKey && (pagamentoFiltro === 'todos' || i.pagamento === pagamentoFiltro)).forEach(i => { val += i.valor; }); if (val > 0) temDespesaNaCat = true; let baseColorR = cat === 'Investimentos' ? '6, 182, 212' : '244, 63, 94'; let intensidade = val > 0 ? Math.max(0.15, Math.min(0.9, val / maxValor)) : 0; celsHtml += `<td><div class="heatmap-cell" style="background: ${val > 0 ? `rgba(${baseColorR}, ${intensidade})` : 'rgba(255, 255, 255, 0.01)'}; color: ${val > 0 ? '#fff' : 'var(--text-muted)'};" onclick="acionarDrillDown('${mKey}', '${cat}')">${val > 0 ? 'R$ ' + val.toLocaleString('pt-BR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '-'}</div></td>`; });
                 if (temDespesaNaCat) { tr.innerHTML = htmlTd + celsHtml; tbodyHeatmap.appendChild(tr); }
             });
         }
@@ -1566,47 +1402,40 @@
             const tbodyMatriz = document.getElementById('tbodyMatriz'); tbodyMatriz.innerHTML = '';
             categoriasDespesa.forEach(cat => {
                 const mesesValores = Array(12).fill(0); let totalCatAnual = 0;
-                dadosAno.filter(i => i.tipo === 'despesa' && i.categoria === cat && (pagamentoFiltro === 'todos' || i.pagamento === pagamentoFiltro)).forEach(i => {
-                    const idx = mesesKeys.indexOf(i.mes); if (idx !== -1) { mesesValores[idx] += i.valor; totalCatAnual += i.valor; }
-                });
+                dadosAno.filter(i => i.tipo === 'despesa' && i.categoria === cat && (pagamentoFiltro === 'todos' || i.pagamento === pagamentoFiltro)).forEach(i => { const idx = mesesKeys.indexOf(i.mes); if (idx !== -1) { mesesValores[idx] += i.valor; totalCatAnual += i.valor; } });
                 if (totalCatAnual > 0) {
-                    let tr = document.createElement('tr');
-                    let corValor = cat === 'Investimentos' ? 'color: var(--pix-color);' : 'color: var(--danger);';
-                    let htmlTd = `<td style="font-weight: bold; text-align: right; ${corValor}">R$ ${totalCatAnual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>`;
-                    htmlTd += `<td style="font-weight: 600;">${cat === 'Investimentos' ? '🔵 ' + cat : cat}</td>`;
-                    mesesKeys.forEach((mKey, idx) => {
-                        let val = mesesValores[idx];
-                        if (val > 0) {
-                            let estiloBtn = cat === 'Investimentos' ? 'background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.4); color: var(--pix-color);' : '';
-                            htmlTd += `<td><button class="cell-drill" style="${estiloBtn}" onclick="acionarDrillDown('${mKey}', '${cat}')">R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</button></td>`;
-                        } else htmlTd += `<td><span class="cell-empty">-</span></td>`;
-                    });
+                    let tr = document.createElement('tr'); let corValor = cat === 'Investimentos' ? 'color: var(--pix-color);' : 'color: var(--danger);'; let htmlTd = `<td style="font-weight: bold; text-align: right; ${corValor}">R$ ${totalCatAnual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>`; htmlTd += `<td style="font-weight: 600;">${cat === 'Investimentos' ? '🔵 ' + cat : cat}</td>`;
+                    mesesKeys.forEach((mKey, idx) => { let val = mesesValores[idx]; if (val > 0) { let estiloBtn = cat === 'Investimentos' ? 'background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.4); color: var(--pix-color);' : ''; htmlTd += `<td><button class="cell-drill" style="${estiloBtn}" onclick="acionarDrillDown('${mKey}', '${cat}')">R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</button></td>`; } else htmlTd += `<td><span class="cell-empty">-</span></td>`; });
                     tr.innerHTML = htmlTd; tbodyMatriz.appendChild(tr);
                 }
             });
         }
 
+        // FUNÇÃO DE RENDERIZAR CABEÇALHO INTERATIVO COM FILTRO E ORDENAÇÃO
+        function getThInterativo(campo, titulo, alinhamento = '') {
+            const isSorted = sortExtratoField === campo;
+            const seta = isSorted ? (sortExtratoDir === 'asc' ? ' 🔼' : ' 🔽') : '';
+            const filterActive = (campo === 'desc' && columnFilters.desc) ||
+                                 (campo === 'data' && columnFilters.data) ||
+                                 (campo === 'categoria' && columnFilters.categoria !== 'todas') ||
+                                 (campo === 'pagamento' && columnFilters.pagamento !== 'todos') ||
+                                 (campo === 'tipo' && columnFilters.tipo !== 'todos') ||
+                                 (campo === 'valor' && (columnFilters.valorMin !== '' || columnFilters.valorMax !== ''));
+
+            return `
+                <th class="sortable ${alinhamento}" onclick="ordenarExtrato('${campo}')">
+                    <div class="th-container">
+                        <span>${titulo}${seta}</span>
+                        <span class="filter-btn-icon ${filterActive ? 'active' : ''}" onclick="abrirPopUpFiltroColuna('${campo}', event)" title="Filtrar por esta coluna">🔍</span>
+                    </div>
+                </th>
+            `;
+        }
+
         function renderPlanilhaAnalitica(lancamentos) {
-            const container = document.getElementById('containerExtrato');
-            if (!container) return;
-
-            const lancamentosOrdenados = [...lancamentos].sort((a, b) => {
-                const getPriority = (item) => {
-                    if (item.tipo === 'receita') return 1;
-                    const catLower = (item.categoria || '').toLowerCase();
-                    const descLower = (item.desc || '').toLowerCase();
-                    if (catLower.includes('assinatura') || descLower.includes('assinatura')) return 2;
-                    if (catLower.includes('aluguel') || descLower.includes('aluguel')) return 3;
-                    return 4;
-                };
-                let pA = getPriority(a);
-                let pB = getPriority(b);
-                if (pA !== pB) return pA - pB;
-                return a.id - b.id;
-            });
-
-            const totalDespesas = lancamentosOrdenados.filter(i => i.tipo === 'despesa').reduce((acc, i) => acc + i.valor, 0);
-            const totalReceitas = lancamentosOrdenados.filter(i => i.tipo === 'receita').reduce((acc, i) => acc + i.valor, 0);
+            const container = document.getElementById('containerExtrato'); if (!container) return;
+            const totalDespesas = lancamentos.filter(i => i.tipo === 'despesa').reduce((acc, i) => acc + i.valor, 0);
+            const totalReceitas = lancamentos.filter(i => i.tipo === 'receita').reduce((acc, i) => acc + i.valor, 0);
 
             let html = `
                 <div class="table-responsive analytical-sheet" style="margin-top: 16px;">
@@ -1614,12 +1443,12 @@
                         <thead class="table-light text-uppercase">
                             <tr>
                                 <th style="width: 50px;" class="text-center">#</th>
-                                <th>A - Período</th>
-                                <th>B - Descrição (Item)</th>
-                                <th>C - Categoria</th>
-                                <th>D - Meio</th>
-                                <th>E - Fluxo</th>
-                                <th class="text-end">F - Valor (R$)</th>
+                                ${getThInterativo('data', 'A - Período')}
+                                ${getThInterativo('desc', 'B - Descrição (Item)')}
+                                ${getThInterativo('categoria', 'C - Categoria')}
+                                ${getThInterativo('pagamento', 'D - Meio')}
+                                ${getThInterativo('tipo', 'E - Fluxo')}
+                                ${getThInterativo('valor', 'F - Valor (R$)', 'text-end')}
                                 <th class="text-end" style="color: var(--primary);">G - % do Gasto</th>
                                 <th class="text-center" style="width: 120px;">Ações</th>
                             </tr>
@@ -1627,35 +1456,22 @@
                         <tbody>
             `;
 
-            if (lancamentosOrdenados.length === 0) {
+            if (lancamentos.length === 0) {
                 html += `<tr><td colspan="9" class="text-center py-3 text-muted">Nenhum lançamento encontrado.</td></tr>`;
             } else {
                 let totalGeral = 0;
-                lancamentosOrdenados.forEach((l, index) => {
+                lancamentos.forEach((l, index) => {
                     const valorFormatado = Number(l.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     const classeValor = l.tipo === 'receita' ? 'text-success' : 'text-danger';
                     const dataFormatada = l.data || `${nomesMeses[l.mes] ? nomesMeses[l.mes].slice(0,3) : l.mes}/${l.ano}`;
                     
                     let fluxoTexto = l.tipo.toUpperCase();
-                    const catLower = (l.categoria || '').toLowerCase();
-                    const descLower = (l.desc || '').toLowerCase();
-                    if (l.tipo === 'despesa') {
-                        if (catLower.includes('assinatura') || descLower.includes('assinatura')) {
-                            fluxoTexto = 'ASSINATURA';
-                        } else if (catLower.includes('aluguel') || descLower.includes('aluguel')) {
-                            fluxoTexto = 'ALUGUEL';
-                        }
-                    }
+                    const catLower = (l.categoria || '').toLowerCase(); const descLower = (l.desc || '').toLowerCase();
+                    if (l.tipo === 'despesa') { if (catLower.includes('assinatura') || descLower.includes('assinatura')) { fluxoTexto = 'ASSINATURA'; } else if (catLower.includes('aluguel') || descLower.includes('aluguel')) { fluxoTexto = 'ALUGUEL'; } }
 
                     let pctTexto = '-';
-                    if (l.tipo === 'despesa' && totalDespesas > 0) {
-                        const pct = (l.valor / totalDespesas) * 100;
-                        pctTexto = `${pct.toFixed(1).replace('.', ',')}%`;
-                    } else if (l.tipo === 'receita' && totalReceitas > 0) {
-                        const pct = (l.valor / totalReceitas) * 100;
-                        pctTexto = `${pct.toFixed(1).replace('.', ',')}% (Entrada)`;
-                    }
-
+                    if (l.tipo === 'despesa' && totalDespesas > 0) { pctTexto = `${((l.valor / totalDespesas) * 100).toFixed(1).replace('.', ',')}%`; } 
+                    else if (l.tipo === 'receita' && totalReceitas > 0) { pctTexto = `${((l.valor / totalReceitas) * 100).toFixed(1).replace('.', ',')}% (Entrada)`; }
                     totalGeral += (l.tipo === 'receita' ? l.valor : -l.valor);
 
                     html += `
@@ -1680,7 +1496,6 @@
                 const totalFormatadoGeral = Number(Math.abs(totalGeral)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const textoTotalGeral = totalGeral >= 0 ? `+ ${totalFormatadoGeral}` : `- ${totalFormatadoGeral}`;
                 const corTotalGeral = totalGeral >= 0 ? 'text-success' : 'text-danger';
-
                 html += `
                         </tbody>
                         <tfoot>
@@ -1692,27 +1507,18 @@
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-            `;
+                </div>`;
             }
-
             container.innerHTML = html;
         }
 
         function renderizarExtrato(dadosExtrato) {
-            const container = document.getElementById('containerExtrato');
-            const headerExtrato = document.getElementById('headerExtrato');
+            const container = document.getElementById('containerExtrato'); const headerExtrato = document.getElementById('headerExtrato');
             
-            if (drillDownFiltro) {
-                headerExtrato.innerHTML = `<h2>📋 Extrato (Filtro: ${drillDownFiltro.categoria} em ${nomesMeses[drillDownFiltro.mes]}) <button onclick="limparFiltroDrillDown(); renderizarTudo();" style="background:var(--danger); color:white; border:none; padding:5px 12px; border-radius:8px; cursor:pointer; font-size:0.75rem; margin-left:12px;">✖ Limpar</button></h2>`;
-            } else {
-                headerExtrato.innerHTML = `<h2>📋 Extrato Detalhado <span style="font-size:0.75rem; color:var(--primary); font-weight:normal;">(💡 Dica: Arraste os itens para reorganizar e clique para editar!)</span></h2>`;
-            }
+            if (drillDownFiltro) { headerExtrato.innerHTML = `<h2><span class="drag-handle" title="Arraste para mover">⣿</span> 📋 Extrato (Filtro: ${drillDownFiltro.categoria} em ${nomesMeses[drillDownFiltro.mes]}) <button onclick="limparFiltroDrillDown(); renderizarTudo();" style="background:var(--danger); color:white; border:none; padding:5px 12px; border-radius:8px; cursor:pointer; font-size:0.75rem; margin-left:12px;">✖ Limpar</button></h2>`; } 
+            else { headerExtrato.innerHTML = `<h2><span class="drag-handle" title="Arraste para mover">⣿</span> 📋 Extrato Detalhado <span style="font-size:0.75rem; color:var(--primary); font-weight:normal;">(💡 Clique nos títulos das colunas para ordenar/filtrar)</span></h2>`; }
 
-            if (dadosExtrato.length === 0) {
-                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 32px;">Nenhum lançamento encontrado para esta seleção.</div>`;
-                return;
-            }
+            if (dadosExtrato.length === 0) { container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 32px;">Nenhum lançamento encontrado para esta seleção.</div>`; return; }
 
             if (modoExibicaoExtrato === 'analitica') {
                 renderPlanilhaAnalitica(dadosExtrato);
@@ -1724,13 +1530,18 @@
             
             if (modoExibicaoExtrato === 'cards') {
                 html = '<div class="extrato-grid">';
-                dadosExtrato.forEach(item => {
-                    html += gerarCardHTML(item);
-                });
+                dadosExtrato.forEach(item => { html += gerarCardHTML(item); });
                 html += '</div>';
             } 
             else if (modoExibicaoExtrato === 'tabela') {
-                html = '<div class="table-responsive"><table class="table table-hover table-bordered"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Pagamento</th><th>Valor</th><th>Ações</th></tr></thead><tbody>';
+                html = `<div class="table-responsive"><table class="table table-hover table-bordered"><thead><tr>
+                    ${getThInterativo('data', 'Data')}
+                    ${getThInterativo('desc', 'Descrição')}
+                    ${getThInterativo('categoria', 'Categoria')}
+                    ${getThInterativo('pagamento', 'Pagamento')}
+                    ${getThInterativo('valor', 'Valor')}
+                    <th style="text-align:center;">Ações</th>
+                </tr></thead><tbody>`;
                 dadosExtrato.forEach(item => {
                     html += `<tr data-item-id="${item.id}" draggable="true">
                         <td>${item.mes}/${item.ano}</td>
@@ -1749,10 +1560,7 @@
             } 
             else if (modoExibicaoExtrato === 'categorias') {
                 const categoriasAgrupadas = {};
-                dadosExtrato.forEach(item => {
-                    if (!categoriasAgrupadas[item.categoria]) categoriasAgrupadas[item.categoria] = [];
-                    categoriasAgrupadas[item.categoria].push(item);
-                });
+                dadosExtrato.forEach(item => { if (!categoriasAgrupadas[item.categoria]) categoriasAgrupadas[item.categoria] = []; categoriasAgrupadas[item.categoria].push(item); });
                 for (const [cat, itensCat] of Object.entries(categoriasAgrupadas)) {
                     html += `<h3 style="margin: 20px 0 10px; color: var(--primary); border-bottom: 1px solid var(--card-border); padding-bottom: 5px;">📂 ${cat}</h3>`;
                     html += '<div class="extrato-grid">';
@@ -1778,130 +1586,43 @@
                 </div>
                 <div class="extrato-card-footer">
                     <span class="editable-cell tag-pag ${item.pagamento === 'Pix' ? 'tag-pix' : 'tag-cartao'}" onclick="editarCelulaInline(${item.id}, 'pagamento', event)">${item.pagamento}</span>
-                    <span class="editable-cell" style="font-size: 0.8rem; color: var(--text-muted);" onclick="editarCelulaInline(${item.id}, 'categoria', event)">📂 ${item.categoria}</span>
-                    <div style="display: flex; gap: 4px;">
-                        <button onclick="duplicarItem(${item.id})" class="btn-duplicate" title="Duplicar">📄</button>
-                        <button onclick="editarItem(${item.id})" class="btn-edit" title="Editar">✏️</button>
-                        <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete" title="Excluir">❌</button>
-                    </div>
+                    <span class="editable-cell" style="font-size: 0.8rem; color: var(--text-muted);" onclick="editarCelulaInline(${item.id}, 'categoria', event)">${item.categoria}</span>
                 </div>
             </div>`;
         }
 
-        // --- SISTEMA DE DRAG AND DROP DO EXTRATO ---
+        // Drag and Drop para itens manuais do Extrato
         function configurarDragAndDropExtrato() {
-            const draggables = document.querySelectorAll('#containerExtrato [draggable="true"]');
             const container = document.getElementById('containerExtrato');
+            if(!container) return;
+            const draggables = container.querySelectorAll('[draggable="true"]');
             
-            draggables.forEach(draggable => {
-                draggable.addEventListener('dragstart', () => { 
-                    draggable.classList.add('dragging'); 
-                });
-                draggable.addEventListener('dragend', () => {
-                    draggable.classList.remove('dragging');
-                    salvarOrdemManualExtrato();
+            draggables.forEach(item => {
+                item.addEventListener('dragstart', () => { item.classList.add('dragging'); });
+                item.addEventListener('dragend', () => { 
+                    item.classList.remove('dragging');
+                    salvarOrdemExtrato();
                 });
             });
 
-            if (container) {
-                container.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    const afterElement = getDragAfterElementExtrato(container, e.clientY);
-                    const draggable = document.querySelector('#containerExtrato .dragging');
-                    if (draggable) {
-                        if (afterElement == null) {
-                            if (draggable.parentElement === container || draggable.parentElement.classList.contains('extrato-grid') || draggable.parentElement.tagName === 'TBODY') {
-                                draggable.parentElement.appendChild(draggable);
-                            }
-                        } else {
-                            draggable.parentElement.insertBefore(draggable, afterElement);
-                        }
-                    }
-                });
-            }
-        }
-
-        function getDragAfterElementExtrato(container, y) {
-            const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.dragging)')];
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
+            container.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(container, e.clientY);
+                const draggable = document.querySelector('.dragging');
+                if (draggable && !draggable.classList.contains('card')) { 
+                    const parent = draggable.parentNode;
+                    if (afterElement == null) { parent.appendChild(draggable); } 
+                    else { parent.insertBefore(draggable, afterElement); }
                 }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-
-        function salvarOrdemManualExtrato() {
-            const elements = document.querySelectorAll('#containerExtrato [data-item-id]');
-            const newOrder = Array.from(elements).map(el => parseFloat(el.getAttribute('data-item-id')));
-            localStorage.setItem('finanpro_extrato_manual_ordem', JSON.stringify(newOrder));
-        }
-
-        // --- SISTEMA DE DRAG AND DROP DO DASHBOARD ---
-        function configurarDragAndDropDashboard() {
-            const draggables = document.querySelectorAll('#dashboardGrid .card[draggable="true"]');
-            const container = document.getElementById('dashboardGrid');
-            
-            draggables.forEach(draggable => {
-                draggable.addEventListener('dragstart', () => { 
-                    draggable.classList.add('dragging'); 
-                });
-                draggable.addEventListener('dragend', () => {
-                    draggable.classList.remove('dragging');
-                    salvarOrdemDashboard();
-                });
-            });
-
-            if (container) {
-                container.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    const afterElement = getDragAfterElementDash(container, e.clientX, e.clientY);
-                    const draggable = document.querySelector('#dashboardGrid .dragging');
-                    
-                    if (draggable && afterElement && draggable !== afterElement) {
-                        const box = afterElement.getBoundingClientRect();
-                        const offsetX = e.clientX - box.left - box.width / 2;
-                        
-                        // Decide se insere antes ou depois baseado na posição do mouse
-                        if (offsetX < 0) {
-                            container.insertBefore(draggable, afterElement);
-                        } else {
-                            container.insertBefore(draggable, afterElement.nextSibling);
-                        }
-                    }
-                });
-            }
-        }
-
-        function getDragAfterElementDash(container, x, y) {
-            const elements = [...container.querySelectorAll('.card[draggable="true"]:not(.dragging)')];
-            return elements.find(child => {
-                const box = child.getBoundingClientRect();
-                // Verifica se o mouse está sobre a área exata deste elemento (eixo X e Y)
-                return y >= box.top && y <= box.bottom && x >= box.left && x <= box.right;
             });
         }
-
-        function salvarOrdemDashboard() {
-            const cards = document.querySelectorAll('#dashboardGrid .card');
-            const ordem = Array.from(cards).map(c => c.getAttribute('data-card-id'));
-            localStorage.setItem('finanpro_dash_ordem', JSON.stringify(ordem));
+        
+        function salvarOrdemExtrato() {
+            const draggables = document.querySelectorAll('#containerExtrato [draggable="true"]');
+            const ordem = Array.from(draggables).map(el => parseFloat(el.getAttribute('data-item-id')));
+            localStorage.setItem('finanpro_extrato_manual_ordem', JSON.stringify(ordem));
+            sortExtratoField = null; 
         }
-
-        function restaurarOrdemDashboard() {
-            const ordemSalva = JSON.parse(localStorage.getItem('finanpro_dash_ordem'));
-            if (ordemSalva) {
-                const container = document.getElementById('dashboardGrid');
-                ordemSalva.forEach(id => {
-                    const card = document.querySelector(`#dashboardGrid .card[data-card-id="${id}"]`);
-                    if (card) container.appendChild(card); // Move os itens na ordem correta
-                });
-            }
-        }
-
     </script>
 </body>
 </html>
