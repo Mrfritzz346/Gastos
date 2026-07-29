@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1327,6 +1328,15 @@
         function restaurarBackup(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async function(e) { try { const dadosRestaurados = JSON.parse(e.target.result); if (Array.isArray(dadosRestaurados)) { itens = dadosRestaurados; await salvarStorageAsync(); alert("Backup restaurado!"); } else alert("Arquivo inválido."); } catch (err) { alert("Erro ao ler arquivo."); } }; reader.readAsText(file); }
         async function limparTudo() { if (confirm("Tem certeza que deseja apagar TODOS os lançamentos?")) { itens = []; await salvarStorageAsync(); } }
 
+        // Função de hierarquia para ordenação por Tipo/Fluxo na coluna E
+        function getTipoRank(item) {
+            if (item.tipo === 'receita') return 1;
+            const cat = (item.categoria || '').toLowerCase();
+            if (cat.includes('aluguel')) return 2;
+            if (cat.includes('assinatura')) return 3;
+            return 4;
+        }
+
         function renderizarTudo() {
             const anoSelecionado = document.getElementById('anoDashboard').value; const mesSelecionado = document.getElementById('mesDashboard').value; const pagamentoSelecionado = document.getElementById('pagamentoDashboard').value; const categoriaSelecionada = document.getElementById('categoriaDashboard').value; renderizarConfigCategorias();
             let dadosAno = itens.filter(i => String(i.ano) === String(anoSelecionado)); 
@@ -1359,6 +1369,14 @@
             // ORDENAÇÃO PELOS TÍTULOS DE COLUNAS DO EXTRATO
             if (sortExtratoField) {
                 dadosExtrato.sort((a, b) => {
+                    if (sortExtratoField === 'tipo') {
+                        const rankA = getTipoRank(a);
+                        const rankB = getTipoRank(b);
+                        if (rankA !== rankB) {
+                            return sortExtratoDir === 'asc' ? rankA - rankB : rankB - rankA;
+                        }
+                        return a.id - b.id;
+                    }
                     let valA = a[sortExtratoField], valB = b[sortExtratoField];
                     if (sortExtratoField === 'data' || sortExtratoField === 'id') return sortExtratoDir === 'asc' ? a.id - b.id : b.id - a.id;
                     if (sortExtratoField === 'valor') return sortExtratoDir === 'asc' ? a.valor - b.valor : b.valor - a.valor;
@@ -1466,8 +1484,6 @@
                     const dataFormatada = l.data || `${nomesMeses[l.mes] ? nomesMeses[l.mes].slice(0,3) : l.mes}/${l.ano}`;
                     
                     let fluxoTexto = l.tipo.toUpperCase();
-                    const catLower = (l.categoria || '').toLowerCase(); const descLower = (l.desc || '').toLowerCase();
-                    if (l.tipo === 'despesa') { if (catLower.includes('assinatura') || descLower.includes('assinatura')) { fluxoTexto = 'ASSINATURA'; } else if (catLower.includes('aluguel') || descLower.includes('aluguel')) { fluxoTexto = 'ALUGUEL'; } }
 
                     let pctTexto = '-';
                     if (l.tipo === 'despesa' && totalDespesas > 0) { pctTexto = `${((l.valor / totalDespesas) * 100).toFixed(1).replace('.', ',')}%`; } 
@@ -1626,3 +1642,4 @@
     </script>
 </body>
 </html>
+```
