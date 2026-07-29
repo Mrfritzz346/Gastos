@@ -461,6 +461,24 @@
         .cat-chip:hover { border-color: var(--card-border-hover); }
         .cat-chip button { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem; padding: 0; transition: transform 0.2s; }
         .cat-chip button:hover { transform: scale(1.2); }
+
+        /* Utility classes for analytical sheet compatibility */
+        .text-end { text-align: right !important; }
+        .text-center { text-align: center !important; }
+        .text-success { color: var(--success) !important; }
+        .text-danger { color: var(--danger) !important; }
+        .text-muted { color: var(--text-muted) !important; }
+        .fw-bold { font-weight: 700 !important; }
+        .align-middle { vertical-align: middle !important; }
+        .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px; }
+        .table-sm th, .table-sm td { padding: 8px 10px !important; }
+        .table-bordered th, .table-bordered td { border: 1px solid var(--card-border) !important; }
+        .table-hover tbody tr:hover { background-color: rgba(255, 255, 255, 0.04) !important; }
+        .table-light { background-color: rgba(255, 255, 255, 0.05) !important; color: var(--text-main); }
+        .bg-success { background-color: rgba(16, 185, 129, 0.2) !important; color: var(--success) !important; border: 1px solid rgba(16, 185, 129, 0.4); }
+        .bg-warning { background-color: rgba(245, 158, 11, 0.2) !important; color: var(--warning) !important; border: 1px solid rgba(245, 158, 11, 0.4); }
+        .py-3 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+        .mb-0 { margin-bottom: 0 !important; }
     </style>
 </head>
 <body>
@@ -706,10 +724,31 @@
     </div>
 
     <div id="tabConfig" class="tab-content">
+        <!-- Configuração GitHub Gist -->
+        <div class="card" style="margin-bottom: 24px; border-top: 3px solid var(--primary);">
+            <h2>🐙 Sincronização Automática via GitHub Gist</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin: 10px 0 20px 0;">
+                Insira seu token pessoal do GitHub e o ID do seu Gist para manter seus dados salvos e sincronizados na nuvem.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: end;">
+                <div>
+                    <label for="inputGhToken">GitHub Personal Access Token</label>
+                    <input type="password" id="inputGhToken" placeholder="ghp_..." onchange="salvarConfigGh()">
+                </div>
+                <div>
+                    <label for="inputGhGistId">GitHub Gist ID</label>
+                    <input type="text" id="inputGhGistId" placeholder="ID do Gist..." onchange="salvarConfigGh()">
+                </div>
+                <div>
+                    <button onclick="testarSincronizacaoGist()" class="btn-add" style="height: 44px;">🔄 Sincronizar Agora</button>
+                </div>
+            </div>
+        </div>
+
         <div class="card" style="margin-bottom: 24px;">
             <h2>💾 Central de Backup Local & Segurança</h2>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin: 10px 0 20px 0;">
-                Seus dados são salvos diretamente no armazenamento do seu navegador (localStorage). Use estes botões para backup manual.
+                Seus dados também ficam salvos no navegador (localStorage). Use estes botões para backup manual em JSON.
             </p>
             <div class="backup-toolbar">
                 <button onclick="fazerBackup()" class="btn-backup">📥 Baixar Backup JSON</button>
@@ -741,6 +780,79 @@
     </div>
 
     <script>
+        // Recupera as credenciais salvas localmente no navegador
+        function getGithubConfig() {
+            return {
+                token: localStorage.getItem('gh_token'),
+                gistId: localStorage.getItem('gh_gist_id')
+            };
+        }
+
+        // 1. Carregar os dados do Gist ao abrir a página
+        async function carregarDadosDoGist() {
+            const { token, gistId } = getGithubConfig();
+            if (!token || !gistId) {
+                console.warn('Token ou Gist ID não configurados.');
+                return null;
+            }
+
+            try {
+                const response = `https://api.github.com/gists/${gistId}`;
+                const res = await fetch(response, {
+                    headers: {
+                        'Authorization': `token ${token}`
+                    }
+                });
+                
+                if (!res.ok) throw new Error('Erro ao conectar com a API do GitHub.');
+
+                const data = await res.json();
+                const arquivo = data.files['dados.json'];
+                
+                if (arquivo && arquivo.content) {
+                    return JSON.parse(arquivo.content);
+                }
+                return {};
+            } catch (error) {
+                console.error('Falha ao carregar:', error);
+                return null;
+            }
+        }
+
+        // 2. Salvar/Atualizar os dados no Gist sempre que houver modificação
+        async function salvarDadosNoGist(dadosObjeto) {
+            const { token, gistId } = getGithubConfig();
+            if (!token || !gistId) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        description: "Atualização automática de dados da aplicação",
+                        files: {
+                            'dados.json': {
+                                content: JSON.stringify(dadosObjeto, null, 2)
+                            }
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    console.log('Dados salvos com sucesso no GitHub Gist!');
+                } else {
+                    console.error('Erro ao salvar no GitHub.');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao salvar:', error);
+            }
+        }
+
         let itens = [];
         let categoriasReceita = JSON.parse(localStorage.getItem('finanpro_cats_rec')) || ["Avó", "Bolsa", "Diversos", "Mãe", "Plantões"];
         let categoriasDespesa = JSON.parse(localStorage.getItem('finanpro_cats_desp')) || ["Aluguel", "Assinaturas", "Amazon-Víctor", "Amazon-Mãe/Avó", "Academia", "Cabelo", "Carro", "Comida/Ifood", "Doações", "Energia", "Farmácia", "Lazer", "Lavanderia", "Outros", "Presentes", "Psicóloga", "Uber/Transporte", "Roupa", "Mercado", "Viagem", "Investimentos"];
@@ -785,28 +897,62 @@
             }
         };
 
-        // Função adaptada para carregar os dados do localStorage (compatível com GitHub Pages)
         async function carregarDados() {
             try {
+                const dadosGist = await carregarDadosDoGist();
+                if (dadosGist && Array.isArray(dadosGist) && dadosGist.length > 0) {
+                    localStorage.setItem('finanpro_itens', JSON.stringify(dadosGist));
+                    return dadosGist;
+                }
                 const dadosStr = localStorage.getItem('finanpro_itens');
                 return dadosStr ? JSON.parse(dadosStr) : [];
             } catch (error) {
-                console.error('Erro ao carregar dados do localStorage', error);
-                return [];
+                console.error('Erro ao carregar dados', error);
+                const dadosStr = localStorage.getItem('finanpro_itens');
+                return dadosStr ? JSON.parse(dadosStr) : [];
             }
         }
 
-        // Função adaptada para salvar os dados no localStorage (compatível com GitHub Pages)
         async function salvarDados(novosDados) {
             try {
                 localStorage.setItem('finanpro_itens', JSON.stringify(novosDados));
+                await salvarDadosNoGist(novosDados);
             } catch (error) {
-                console.error('Erro ao salvar dados no localStorage', error);
+                console.error('Erro ao salvar dados', error);
             }
         }
 
-        // Inicialização automática ao carregar a página
+        function carregarConfigGhUI() {
+            const token = localStorage.getItem('gh_token') || '';
+            const gistId = localStorage.getItem('gh_gist_id') || '';
+            const elToken = document.getElementById('inputGhToken');
+            const elGist = document.getElementById('inputGhGistId');
+            if (elToken) elToken.value = token;
+            if (elGist) elGist.value = gistId;
+        }
+
+        function salvarConfigGh() {
+            const token = document.getElementById('inputGhToken').value.trim();
+            const gistId = document.getElementById('inputGhGistId').value.trim();
+            localStorage.setItem('gh_token', token);
+            localStorage.setItem('gh_gist_id', gistId);
+        }
+
+        async function testarSincronizacaoGist() {
+            salvarConfigGh();
+            const dados = await carregarDadosDoGist();
+            if (dados && Array.isArray(dados)) {
+                itens = dados;
+                await salvarDados(itens);
+                alert('Sincronização com o Gist realizada com sucesso!');
+                renderizarTudo();
+            } else {
+                alert('Não foi possível carregar do Gist. Verifique se o Token e o Gist ID estão corretos.');
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
+            carregarConfigGhUI();
             itens = await carregarDados();
             inicializarAnos();
             renderizarTudo();
@@ -831,15 +977,6 @@
             localStorage.removeItem('finanpro_extrato_manual_ordem');
             sortExtratoField = null;
             renderizarTudo();
-        }
-
-        function salvarOrdemExtrato() {
-            const container = document.getElementById('containerExtrato');
-            if (!container) return;
-            const itemsEl = Array.from(container.querySelectorAll('.extrato-card, tr[data-item-id]'));
-            const newOrder = itemsEl.map(el => parseFloat(el.getAttribute('data-item-id'))).filter(id => !isNaN(id));
-            localStorage.setItem('finanpro_extrato_manual_ordem', JSON.stringify(newOrder));
-            sortExtratoField = null;
         }
 
         async function editarCelulaInline(id, campo, event) {
@@ -1083,7 +1220,7 @@
                 if (!isRecorrente && totalParcelasFinal > 1) descFinal = `${descBase} (${qtdAnteriores + i + 1}/${totalParcelasFinal}) [Parcela]`;
                 else if (isRecorrente) descFinal = `${descBase} (Recorrente)`;
 
-                itens.push({ id: Date.now() + Math.random() + i, grupoId: grupoId, desc: descFinal, valor: valorInformado, tipo: tipo, categoria: categoria, pagamento: pagamento, mes: String(mesCalc).padStart(2, '0'), ano: String(anoCalc) });
+                itens.push({ id: Date.now() + Math.random() + i, grupoId: grupoId, desc: descFinal, valor: valorInformado, tipo: tipo, categoria: categoria, pagamento: pagamento, mes: String(mesCalc).padStart(2, '0'), ano: String(anoCalc), status: 'efetivado' });
             }
             cancelarEdicao(); 
             await salvarStorageAsync();
@@ -1198,19 +1335,6 @@
 
             if (sortExtratoField) {
                 dadosExtrato.sort((a, b) => {
-                    if (sortExtratoField === 'tipo') {
-                        const getPriority = (item) => {
-                            if (item.tipo === 'receita') return 1;
-                            if (item.tipo === 'despesa' && item.categoria && item.categoria.toLowerCase().includes('assinatura')) return 2;
-                            return 3;
-                        };
-                        let pA = getPriority(a);
-                        let pB = getPriority(b);
-                        if (pA !== pB) {
-                            return sortExtratoDir === 'asc' ? pA - pB : pB - pA;
-                        }
-                        return a.id - b.id;
-                    }
                     let valA = a[sortExtratoField], valB = b[sortExtratoField];
                     if (sortExtratoField === 'data') return sortExtratoDir === 'asc' ? a.id - b.id : b.id - a.id;
                     if (sortExtratoField === 'valor') return sortExtratoDir === 'asc' ? a.valor - b.valor : b.valor - a.valor;
@@ -1417,6 +1541,106 @@
             });
         }
 
+        // Função de Planilha Analítica com fluxo organizado na coluna E:
+        // 1. Entradas | 2. Assinaturas de despesas | 3. Aluguel | 4. Restante
+        function renderPlanilhaAnalitica(lancamentos) {
+            const container = document.getElementById('containerExtrato');
+            if (!container) return;
+
+            const lancamentosOrdenados = [...lancamentos].sort((a, b) => {
+                const getPriority = (item) => {
+                    if (item.tipo === 'receita') return 1;
+                    const catLower = (item.categoria || '').toLowerCase();
+                    const descLower = (item.desc || '').toLowerCase();
+                    if (catLower.includes('assinatura') || descLower.includes('assinatura')) return 2;
+                    if (catLower.includes('aluguel') || descLower.includes('aluguel')) return 3;
+                    return 4;
+                };
+                let pA = getPriority(a);
+                let pB = getPriority(b);
+                if (pA !== pB) return pA - pB;
+                return a.id - b.id;
+            });
+
+            let html = `
+                <div class="table-responsive analytical-sheet" style="margin-top: 16px;">
+                    <table class="table table-sm table-bordered table-hover mb-0" style="font-size: 0.85rem;">
+                        <thead class="table-light text-uppercase">
+                            <tr>
+                                <th style="width: 50px;" class="text-center">#</th>
+                                <th>A - Período</th>
+                                <th>B - Descrição (Item)</th>
+                                <th>C - Categoria</th>
+                                <th>D - Meio</th>
+                                <th>E - Fluxo</th>
+                                <th class="text-end">F - Valor (R$)</th>
+                                <th class="text-center" style="width: 120px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            if (lancamentosOrdenados.length === 0) {
+                html += `<tr><td colspan="8" class="text-center py-3 text-muted">Nenhum lançamento encontrado.</td></tr>`;
+            } else {
+                let totalGeral = 0;
+                lancamentosOrdenados.forEach((l, index) => {
+                    const valorFormatado = Number(l.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const classeValor = l.tipo === 'receita' ? 'text-success' : 'text-danger';
+                    const dataFormatada = l.data || `${nomesMeses[l.mes] ? nomesMeses[l.mes].slice(0,3) : l.mes}/${l.ano}`;
+                    
+                    let fluxoTexto = l.tipo.toUpperCase();
+                    const catLower = (l.categoria || '').toLowerCase();
+                    const descLower = (l.desc || '').toLowerCase();
+                    if (l.tipo === 'despesa') {
+                        if (catLower.includes('assinatura') || descLower.includes('assinatura')) {
+                            fluxoTexto = 'ASSINATURA';
+                        } else if (catLower.includes('aluguel') || descLower.includes('aluguel')) {
+                            fluxoTexto = 'ALUGUEL';
+                        }
+                    }
+
+                    totalGeral += (l.tipo === 'receita' ? l.valor : -l.valor);
+
+                    html += `
+                        <tr data-item-id="${l.id}" draggable="true">
+                            <td class="text-center align-middle">${index + 1}</td>
+                            <td class="align-middle">${dataFormatada}</td>
+                            <td class="align-middle text-truncate" style="max-width: 250px;" title="${l.desc}"><strong>${l.desc}</strong></td>
+                            <td class="align-middle">${l.categoria}</td>
+                            <td class="align-middle">${l.pagamento || 'Pix'}</td>
+                            <td class="align-middle"><span class="tag-tipo ${l.tipo === 'receita' ? 'tag-receita' : 'tag-despesa'}">${fluxoTexto}</span></td>
+                            <td class="align-middle text-end fw-bold ${classeValor}">${l.tipo === 'receita' ? '+ ' : '- '}${valorFormatado}</td>
+                            <td class="align-middle text-center">
+                                <button onclick="duplicarItem(${l.id})" class="btn-duplicate" title="Duplicar">📄</button>
+                                <button onclick="editarItem(${l.id})" class="btn-edit" title="Editar">✏️</button>
+                                <button onclick="excluirItem(${l.id}, '${l.grupoId || ''}')" class="btn-delete" title="Excluir">❌</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                const totalFormatadoGeral = Number(Math.abs(totalGeral)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const textoTotalGeral = totalGeral >= 0 ? `+ ${totalFormatadoGeral}` : `- ${totalFormatadoGeral}`;
+                const corTotalGeral = totalGeral >= 0 ? 'text-success' : 'text-danger';
+
+                html += `
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-light fw-bold">
+                                <td colspan="6" class="text-end" style="padding: 12px 16px;">TOTAL LÍQUIDO DO EXTRATO:</td>
+                                <td class="text-end ${corTotalGeral}" style="padding: 12px 16px;">${textoTotalGeral}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+            }
+
+            container.innerHTML = html;
+        }
+
         function renderizarExtrato(dadosExtrato) {
             const container = document.getElementById('containerExtrato');
             const headerExtrato = document.getElementById('headerExtrato');
@@ -1583,66 +1807,7 @@
                 htmlCategorias += '</div>';
                 container.innerHTML = htmlCategorias;
             } else if (modoExibicaoExtrato === 'analitica') {
-                let totalRecExtrato = 0, totalDespExtrato = 0;
-                dadosExtrato.forEach(i => {
-                    if (i.tipo === 'receita') totalRecExtrato += i.valor;
-                    if (i.tipo === 'despesa') totalDespExtrato += i.valor;
-                });
-                const saldoExtrato = totalRecExtrato - totalDespExtrato;
-                const totalDespesasCount = dadosExtrato.filter(i => i.tipo === 'despesa').length;
-                const mediaGasto = totalDespesasCount > 0 ? totalDespExtrato / totalDespesasCount : 0;
-
-                let htmlAnalitica = `
-                    <div class="table-responsive" style="margin-top: 16px; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; background: #0b0f19;">
-                        <table style="border-collapse: collapse; width: 100%; font-family: 'Courier New', Courier, monospace, sans-serif;">
-                            <thead>
-                                <tr style="background: rgba(139, 92, 246, 0.15); border-bottom: 2px solid rgba(139, 92, 246, 0.4);">
-                                    <th style="border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px; text-align: center; width: 40px; color: var(--text-muted);">#</th>
-                                    <th class="sortable" onclick="ordenarExtrato('data')" style="border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px;">A - PERÍODO ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('desc')" style="border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px;">B - DESCRIÇÃO (ITEM) ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('categoria')" style="border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px;">C - CATEGORIA ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('pagamento')" style="border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px;">D - MEIO ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('tipo')" style="border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px; text-align: center;">E - FLUXO ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('valor')" style="border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px; text-align: right;">F - VALOR (R$) ↕</th>
-                                    <th style="border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px; text-align: center;">AÇÕES</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                dadosExtrato.forEach((item, index) => {
-                    let corValor = item.tipo === 'receita' ? 'var(--success)' : 'var(--danger)';
-                    htmlAnalitica += `
-                        <tr data-item-id="${item.id}" draggable="true" title="Arraste para mover" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <td style="border: 1px solid rgba(255,255,255,0.05); padding: 8px 10px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">${index + 1}</td>
-                            <td style="border: 1px solid rgba(255,255,255,0.05); padding: 8px 10px;">${nomesMeses[item.mes].slice(0,3)}/${item.ano}</td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'desc', event)" style="border: 1px solid rgba(255,255,255,0.05); padding: 8px 10px; font-weight: bold;">${item.desc}</td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'categoria', event)" style="border: 1px solid rgba(255,255,255,0.05); padding: 8px 10px;">${item.categoria}</td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'pagamento', event)" style="border: 1px solid rgba(255,255,255,0.05); padding: 8px 10px;">${item.pagamento}</td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'tipo', event)" style="border: 1px solid rgba(255,255,255,0.05); padding: 8px 10px; text-align: center;">${item.tipo.toUpperCase()}</td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'valor', event)" style="border: 1px solid rgba(255,255,255,0.05); padding: 8px 10px; text-align: right; font-weight: bold; color: ${corValor};">R$ ${item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td style="border: 1px solid rgba(255,255,255,0.05); padding: 8px 10px; text-align: center;">
-                                <button onclick="duplicarItem(${item.id})" class="btn-duplicate">📄</button>
-                                <button onclick="editarItem(${item.id})" class="btn-edit">✏️</button>
-                                <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete">❌</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-
-                htmlAnalitica += `
-                            </tbody>
-                            <tfoot>
-                                <tr style="background: rgba(255, 255, 255, 0.04); font-weight: bold;">
-                                    <td colspan="6" style="border: 1px solid rgba(255,255,255,0.1); padding: 10px; text-align: right;">TOTAL LÍQUIDO DO EXTRATO:</td>
-                                    <td style="border: 1px solid rgba(255,255,255,0.1); padding: 10px; text-align: right; color: ${saldoExtrato >= 0 ? 'var(--success)' : 'var(--danger)'};">R$ ${saldoExtrato.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                    <td style="border: 1px solid rgba(255,255,255,0.1);"></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                `;
-                container.innerHTML = htmlAnalitica;
+                renderPlanilhaAnalitica(dadosExtrato);
             }
         }
     </script>
