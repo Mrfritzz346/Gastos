@@ -779,7 +779,7 @@
     </div>
 
     <script>
-        // Configuração do JSONBin.io (Fixada com as credenciais fornecidas)
+        // Configuração do JSONBin.io
         function getJsonBinConfig() {
             return {
                 apiKey: localStorage.getItem('jsonbin_api_key') || '$2a$10$qFby1zSPpwLGdSAi/ddmiOytJVIkhMxEj3Brn939R9jZnZL2WL4Xe',
@@ -841,7 +841,7 @@
             }
         }
 
-        // Botão de Sincronização Rápida no Header (1 clique)
+        // Botão de Sincronização Rápida no Header
         async function sincronizacaoRapidaHeader(btn) {
             const syncText = document.getElementById('syncText');
             const syncIcon = document.getElementById('syncIcon');
@@ -1582,6 +1582,10 @@
                 return a.id - b.id;
             });
 
+            // Cálculo dos totais de Gastos (Despesas) e Entradas (Receitas) para o cálculo percentual
+            const totalDespesas = lancamentosOrdenados.filter(i => i.tipo === 'despesa').reduce((acc, i) => acc + i.valor, 0);
+            const totalReceitas = lancamentosOrdenados.filter(i => i.tipo === 'receita').reduce((acc, i) => acc + i.valor, 0);
+
             let html = `
                 <div class="table-responsive analytical-sheet" style="margin-top: 16px;">
                     <table class="table table-sm table-bordered table-hover mb-0" style="font-size: 0.85rem;">
@@ -1594,6 +1598,7 @@
                                 <th>D - Meio</th>
                                 <th>E - Fluxo</th>
                                 <th class="text-end">F - Valor (R$)</th>
+                                <th class="text-end" style="color: var(--primary);">G - % do Gasto</th>
                                 <th class="text-center" style="width: 120px;">Ações</th>
                             </tr>
                         </thead>
@@ -1601,7 +1606,7 @@
             `;
 
             if (lancamentosOrdenados.length === 0) {
-                html += `<tr><td colspan="8" class="text-center py-3 text-muted">Nenhum lançamento encontrado.</td></tr>`;
+                html += `<tr><td colspan="9" class="text-center py-3 text-muted">Nenhum lançamento encontrado.</td></tr>`;
             } else {
                 let totalGeral = 0;
                 lancamentosOrdenados.forEach((l, index) => {
@@ -1620,6 +1625,16 @@
                         }
                     }
 
+                    // Cálculo da Porcentagem do Gasto (ou Entrada)
+                    let pctTexto = '-';
+                    if (l.tipo === 'despesa' && totalDespesas > 0) {
+                        const pct = (l.valor / totalDespesas) * 100;
+                        pctTexto = `${pct.toFixed(1).replace('.', ',')}%`;
+                    } else if (l.tipo === 'receita' && totalReceitas > 0) {
+                        const pct = (l.valor / totalReceitas) * 100;
+                        pctTexto = `${pct.toFixed(1).replace('.', ',')}% (Entrada)`;
+                    }
+
                     totalGeral += (l.tipo === 'receita' ? l.valor : -l.valor);
 
                     html += `
@@ -1631,6 +1646,7 @@
                             <td class="align-middle">${l.pagamento || 'Pix'}</td>
                             <td class="align-middle"><span class="tag-tipo ${l.tipo === 'receita' ? 'tag-receita' : 'tag-despesa'}">${fluxoTexto}</span></td>
                             <td class="align-middle text-end fw-bold ${classeValor}">${l.tipo === 'receita' ? '+ ' : '- '}${valorFormatado}</td>
+                            <td class="align-middle text-end fw-bold" style="color: var(--text-muted);">${pctTexto}</td>
                             <td class="align-middle text-center">
                                 <button onclick="duplicarItem(${l.id})" class="btn-duplicate" title="Duplicar">📄</button>
                                 <button onclick="editarItem(${l.id})" class="btn-edit" title="Editar">✏️</button>
@@ -1650,6 +1666,7 @@
                             <tr class="table-light fw-bold">
                                 <td colspan="6" class="text-end" style="padding: 12px 16px;">TOTAL LÍQUIDO DO EXTRATO:</td>
                                 <td class="text-end ${corTotalGeral}" style="padding: 12px 16px;">${textoTotalGeral}</td>
+                                <td class="text-end" style="padding: 12px 16px; color: var(--text-muted);">100,0% Total</td>
                                 <td></td>
                             </tr>
                         </tfoot>
@@ -1676,127 +1693,132 @@
                 return;
             }
 
-            if (modoExibicaoExtrato === 'cards') {
-                let htmlCards = '<div class="extrato-grid">';
-                dadosExtrato.forEach(item => {
-                    let tagCatExtra = item.categoria === 'Investimentos' ? 'style="background: rgba(6, 182, 212, 0.15); color: var(--pix-color); border: 1px solid rgba(6, 182, 212, 0.3); padding: 3px 8px; border-radius: 6px; font-weight: 600; font-size:0.75rem;"' : 'style="color: var(--primary); font-weight:600; font-size:0.8rem;"';
-                    
-                    htmlCards += `
-                        <div class="extrato-card" data-item-id="${item.id}" draggable="true" title="Arraste para mover">
-                            <div class="extrato-card-top">
-                                <span>📅 ${nomesMeses[item.mes].slice(0,3)}/${item.ano}</span>
-                                <div>
-                                    <button onclick="duplicarItem(${item.id})" class="btn-duplicate" title="Duplicar">📄</button>
-                                    <button onclick="editarItem(${item.id})" class="btn-edit" title="Editar">✏️</button>
-                                    <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete" title="Excluir">❌</button>
-                                </div>
-                            </div>
-                            <div class="extrato-card-body">
-                                <div class="editable-cell" onclick="editarCelulaInline(${item.id}, 'desc', event)" style="font-size: 1.05rem; font-weight: 700; color: var(--text-main);">
-                                    ${item.desc}
-                                </div>
-                                <div class="editable-cell" onclick="editarCelulaInline(${item.id}, 'categoria', event)">
-                                    <span ${tagCatExtra}>📂 ${item.categoria}</span>
-                                </div>
-                            </div>
-                            <div class="extrato-card-footer">
-                                <div style="display:flex; gap:6px; align-items:center;">
-                                    <span class="editable-cell tag-tipo ${item.tipo === 'receita' ? 'tag-receita' : 'tag-despesa'}" onclick="editarCelulaInline(${item.id}, 'tipo', event)">${item.tipo.toUpperCase()}</span>
-                                    <span class="editable-cell tag-pag ${item.pagamento === 'Pix' ? 'tag-pix' : 'tag-cartao'}" onclick="editarCelulaInline(${item.id}, 'pagamento', event)">${item.pagamento}</span>
-                                </div>
-                                <div class="editable-cell" onclick="editarCelulaInline(${item.id}, 'valor', event)" style="font-size: 1.15rem; font-weight: 800; color: ${item.tipo === 'receita' ? 'var(--success)' : 'var(--danger)'};">
-                                    R$ ${item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                htmlCards += '</div>';
-                container.innerHTML = htmlCards;
-            } else if (modoExibicaoExtrato === 'tabela') {
-                let htmlTabela = `
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th class="sortable" onclick="ordenarExtrato('data')">Data ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('desc')">Descrição ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('categoria')">Categoria ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('tipo')">Tipo ↕</th>
-                                    <th class="sortable" onclick="ordenarExtrato('pagamento')">Pagamento ↕</th>
-                                    <th class="sortable text-end" onclick="ordenarExtrato('valor')">Valor ↕</th>
-                                    <th style="text-align: center;">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-                dadosExtrato.forEach(item => {
-                    const valFmt = item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    htmlTabela += `
-                        <tr data-item-id="${item.id}" draggable="true">
-                            <td>${nomesMeses[item.mes].slice(0,3)}/${item.ano}</td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'desc', event)"><strong>${item.desc}</strong></td>
-                            <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'categoria', event)">${item.categoria}</td>
-                            <td class="editable-cell"><span class="tag-tipo ${item.tipo === 'receita' ? 'tag-receita' : 'tag-despesa'}" onclick="editarCelulaInline(${item.id}, 'tipo', event)">${item.tipo.toUpperCase()}</span></td>
-                            <td class="editable-cell"><span class="tag-pag ${item.pagamento === 'Pix' ? 'tag-pix' : 'tag-cartao'}" onclick="editarCelulaInline(${item.id}, 'pagamento', event)">${item.pagamento}</span></td>
-                            <td class="editable-cell text-end" style="font-weight:700; color: ${item.tipo === 'receita' ? 'var(--success)' : 'var(--danger)'}" onclick="editarCelulaInline(${item.id}, 'valor', event)">R$ ${valFmt}</td>
-                            <td style="text-align: center;">
-                                <button onclick="duplicarItem(${item.id})" class="btn-duplicate" title="Duplicar">📄</button>
-                                <button onclick="editarItem(${item.id})" class="btn-edit" title="Editar">✏️</button>
-                                <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete" title="Excluir">❌</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                htmlTabela += '</tbody></table></div>';
-                container.innerHTML = htmlTabela;
-            } else if (modoExibicaoExtrato === 'categorias') {
-                let catsMap = {};
-                dadosExtrato.forEach(item => {
-                    if (!catsMap[item.categoria]) catsMap[item.categoria] = [];
-                    catsMap[item.categoria].push(item);
-                });
-                let htmlCat = '<div style="display: flex; flex-direction: column; gap: 20px;">';
-                for (let [cat, itensCat] of Object.entries(catsMap)) {
-                    let totalCat = itensCat.reduce((acc, i) => acc + (i.tipo === 'receita' ? i.valor : -i.valor), 0);
-                    htmlCat += `
-                        <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
-                                <h3 style="font-size: 1rem; color: var(--primary);">📂 ${cat} (${itensCat.length} itens)</h3>
-                                <span style="font-weight: 700; color: ${totalCat >= 0 ? 'var(--success)' : 'var(--danger)'};">Total: R$ ${Math.abs(totalCat).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </div>
-                            <div class="extrato-grid">
-                    `;
-                    itensCat.forEach(item => {
-                        let valFmt = item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        htmlCat += `
-                            <div class="extrato-card" data-item-id="${item.id}" draggable="true">
-                                <div class="extrato-card-top">
-                                    <span>📅 ${nomesMeses[item.mes].slice(0,3)}/${item.ano}</span>
-                                    <div>
-                                        <button onclick="duplicarItem(${item.id})" class="btn-duplicate" title="Duplicar">📄</button>
-                                        <button onclick="editarItem(${item.id})" class="btn-edit" title="Editar">✏️</button>
-                                        <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete" title="Excluir">❌</button>
-                                    </div>
-                                </div>
-                                <div class="extrato-card-body">
-                                    <div style="font-size: 1rem; font-weight: 700; color: var(--text-main);">${item.desc}</div>
-                                </div>
-                                <div class="extrato-card-footer">
-                                    <span class="tag-tipo ${item.tipo === 'receita' ? 'tag-receita' : 'tag-despesa'}">${item.tipo.toUpperCase()}</span>
-                                    <span style="font-weight: 800; color: ${item.tipo === 'receita' ? 'var(--success)' : 'var(--danger)'};">R$ ${valFmt}</span>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    htmlCat += '</div></div>';
-                }
-                htmlCat += '</div>';
-                container.innerHTML = htmlCat;
-            } else if (modoExibicaoExtrato === 'analitica') {
+            if (modoExibicaoExtrato === 'analitica') {
                 renderPlanilhaAnalitica(dadosExtrato);
+                configurarDragAndDrop();
+                return;
+            }
+
+            let html = '';
+            
+            if (modoExibicaoExtrato === 'cards') {
+                html = '<div class="extrato-grid">';
+                dadosExtrato.forEach(item => {
+                    html += gerarCardHTML(item);
+                });
+                html += '</div>';
+            } 
+            else if (modoExibicaoExtrato === 'tabela') {
+                html = '<div class="table-responsive"><table class="table table-hover table-bordered"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Pagamento</th><th>Valor</th><th>Ações</th></tr></thead><tbody>';
+                dadosExtrato.forEach(item => {
+                    html += `<tr data-item-id="${item.id}" draggable="true">
+                        <td>${item.mes}/${item.ano}</td>
+                        <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'desc', event)">${item.desc}</td>
+                        <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'categoria', event)">${item.categoria}</td>
+                        <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'pagamento', event)">${item.pagamento}</td>
+                        <td class="editable-cell" onclick="editarCelulaInline(${item.id}, 'valor', event)" style="font-weight: bold; color: ${item.tipo === 'receita' ? 'var(--success)' : 'var(--danger)'};">R$ ${item.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td style="text-align: center;">
+                            <button onclick="duplicarItem(${item.id})" class="btn-duplicate" title="Duplicar">📄</button>
+                            <button onclick="editarItem(${item.id})" class="btn-edit" title="Editar">✏️</button>
+                            <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete" title="Excluir">❌</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+            } 
+            else if (modoExibicaoExtrato === 'categorias') {
+                const categoriasAgrupadas = {};
+                dadosExtrato.forEach(item => {
+                    if (!categoriasAgrupadas[item.categoria]) categoriasAgrupadas[item.categoria] = [];
+                    categoriasAgrupadas[item.categoria].push(item);
+                });
+                for (const [cat, itensCat] of Object.entries(categoriasAgrupadas)) {
+                    html += `<h3 style="margin: 20px 0 10px; color: var(--primary); border-bottom: 1px solid var(--card-border); padding-bottom: 5px;">📂 ${cat}</h3>`;
+                    html += '<div class="extrato-grid">';
+                    itensCat.forEach(item => { html += gerarCardHTML(item); });
+                    html += '</div>';
+                }
+            }
+
+            container.innerHTML = html;
+            configurarDragAndDrop();
+        }
+
+        function gerarCardHTML(item) {
+            return `
+            <div class="extrato-card" data-item-id="${item.id}" draggable="true">
+                <div class="extrato-card-top">
+                    <span>${item.mes}/${item.ano}</span>
+                    <span class="tag-tipo ${item.tipo === 'receita' ? 'tag-receita' : 'tag-despesa'}">${item.tipo.toUpperCase()}</span>
+                </div>
+                <div class="extrato-card-body">
+                    <strong class="editable-cell" onclick="editarCelulaInline(${item.id}, 'desc', event)">${item.desc}</strong>
+                    <span style="font-size: 1.4rem; font-weight: 800; color: ${item.tipo === 'receita' ? 'var(--success)' : 'var(--danger)'};" class="editable-cell" onclick="editarCelulaInline(${item.id}, 'valor', event)">R$ ${item.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div class="extrato-card-footer">
+                    <span class="editable-cell tag-pag ${item.pagamento === 'Pix' ? 'tag-pix' : 'tag-cartao'}" onclick="editarCelulaInline(${item.id}, 'pagamento', event)">${item.pagamento}</span>
+                    <span class="editable-cell" style="font-size: 0.8rem; color: var(--text-muted);" onclick="editarCelulaInline(${item.id}, 'categoria', event)">📂 ${item.categoria}</span>
+                    <div style="display: flex; gap: 4px;">
+                        <button onclick="duplicarItem(${item.id})" class="btn-duplicate" title="Duplicar">📄</button>
+                        <button onclick="editarItem(${item.id})" class="btn-edit" title="Editar">✏️</button>
+                        <button onclick="excluirItem(${item.id}, '${item.grupoId || ''}')" class="btn-delete" title="Excluir">❌</button>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // --- SISTEMA DE DRAG AND DROP ---
+        function configurarDragAndDrop() {
+            const draggables = document.querySelectorAll('[draggable="true"]');
+            const container = document.getElementById('containerExtrato');
+            
+            draggables.forEach(draggable => {
+                draggable.addEventListener('dragstart', () => { 
+                    draggable.classList.add('dragging'); 
+                });
+                draggable.addEventListener('dragend', () => {
+                    draggable.classList.remove('dragging');
+                    salvarOrdemManual();
+                });
+            });
+
+            if (container) {
+                container.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElement(container, e.clientY);
+                    const draggable = document.querySelector('.dragging');
+                    if (draggable) {
+                        if (afterElement == null) {
+                            if (draggable.parentElement === container || draggable.parentElement.classList.contains('extrato-grid') || draggable.parentElement.tagName === 'TBODY') {
+                                draggable.parentElement.appendChild(draggable);
+                            }
+                        } else {
+                            draggable.parentElement.insertBefore(draggable, afterElement);
+                        }
+                    }
+                });
             }
         }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function salvarOrdemManual() {
+            const elements = document.querySelectorAll('[data-item-id]');
+            const newOrder = Array.from(elements).map(el => parseFloat(el.getAttribute('data-item-id')));
+            localStorage.setItem('finanpro_extrato_manual_ordem', JSON.stringify(newOrder));
+        }
+
     </script>
 </body>
 </html>
