@@ -208,6 +208,8 @@
         }
 
         .card:hover { border-color: rgba(255, 255, 255, 0.12); }
+        
+        /* Drag & Drop Styles para Cards do Dash, Extrato e Matriz */
         .card[draggable="true"], .extrato-card[draggable="true"], tr[draggable="true"] { cursor: grab; }
         .card[draggable="true"]:active, .extrato-card[draggable="true"]:active, tr[draggable="true"]:active { cursor: grabbing; }
         .card.dragging, .extrato-card.dragging, tr.dragging { opacity: 0.4; border: 2px dashed var(--primary); background: rgba(139, 92, 246, 0.08); }
@@ -486,9 +488,16 @@
             <span class="badge">Gestão & Análises</span>
         </div>
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <button onclick="sincronizacaoRapidaHeader(this)" class="tab-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--success); border-color: rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 6px;" title="Sincronizar dados com o JSONBin com 1 clique">
-                <span id="syncIcon">☁️</span> <span id="syncText">Sincronizar JSONBin</span>
+            
+            <!-- Novos Botões Separados: Upload e Download -->
+            <button onclick="baixarDoJsonBinBtn()" class="tab-btn" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; border-color: rgba(59, 130, 246, 0.4); display: flex; align-items: center; gap: 6px;" title="Baixar e sobrescrever dados da nuvem">
+                <span id="downloadIcon">⬇️</span> <span id="downloadText">Baixar Nuvem</span>
             </button>
+
+            <button onclick="enviarParaJsonBinBtn()" class="tab-btn" style="background: rgba(16, 185, 129, 0.15); color: var(--success); border-color: rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 6px;" title="Enviar e salvar dados locais na nuvem">
+                <span id="uploadIcon">⬆️</span> <span id="uploadText">Salvar na Nuvem</span>
+            </button>
+
             <div class="nav-tabs">
                 <button class="tab-btn active" onclick="mudarAba('dash')">📊 Dashboard & Análises</button>
                 <button class="tab-btn" onclick="mudarAba('matriz')">📑 Matriz, Heatmap & Extrato</button>
@@ -545,44 +554,45 @@
         </div>
 
         <div class="dashboard-grid-3x3" id="dashboardGrid">
-            <div class="card" data-card-id="fluxo" style="margin-bottom: 0;">
+            <!-- Adicionado atributo draggable="true" nos cards abaixo -->
+            <div class="card" data-card-id="fluxo" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header"><h2>Fluxo de Caixa Consolidado 🖱️</h2></div>
                 <div class="chart-container"><canvas id="chartFluxoConsolidado"></canvas></div>
             </div>
 
-            <div class="card" data-card-id="topEntradas" style="margin-bottom: 0;">
+            <div class="card" data-card-id="topEntradas" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header"><h2>Top Entradas por Categoria</h2></div>
                 <div class="chart-container"><canvas id="chartTopEntradas"></canvas></div>
             </div>
 
-            <div class="card" data-card-id="entradasDoughnut" style="margin-bottom: 0;">
+            <div class="card" data-card-id="entradasDoughnut" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header"><h2 id="tituloDoughnutEntradas">Distribuição de Entradas - <i>Clique para ver itens</i></h2></div>
                 <div class="chart-container"><canvas id="chartEntradasDoughnut"></canvas></div>
             </div>
 
-            <div class="card card-full-width" data-card-id="evolucaoCat" style="margin-bottom: 0;">
+            <div class="card card-full-width" data-card-id="evolucaoCat" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header">
                     <h2>📈 Evolução Mensal por Categoria (Gastos) - 🔍 Visão Panorâmica Ampliada</h2>
                 </div>
                 <div class="chart-container chart-container-large"><canvas id="chartEvolucaoCat"></canvas></div>
             </div>
 
-            <div class="card" data-card-id="topCategorias" style="margin-bottom: 0;">
+            <div class="card" data-card-id="topCategorias" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header"><h2>Top Gastos por Categoria</h2></div>
                 <div class="chart-container"><canvas id="chartTopCategorias"></canvas></div>
             </div>
 
-            <div class="card" data-card-id="topItens" style="margin-bottom: 0;">
-                <h2 id="tituloCardTopItens">Top Gastos por Itens (Maiores Despesas)</h2>
+            <div class="card" data-card-id="topItens" style="margin-bottom: 0;" draggable="true">
+                <h2 id="tituloCardTopItens" style="margin-bottom: 20px;">Top Gastos por Itens (Maiores Despesas)</h2>
                 <div class="chart-container"><canvas id="chartTopItens"></canvas></div>
             </div>
 
-            <div class="card" data-card-id="gastosDoughnut" style="margin-bottom: 0;">
+            <div class="card" data-card-id="gastosDoughnut" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header"><h2 id="tituloDoughnutGastos">Distribuição de Gastos - <i>Clique para ver itens</i></h2></div>
                 <div class="chart-container"><canvas id="chartGastosDoughnut"></canvas></div>
             </div>
 
-            <div class="card" data-card-id="pixVsCartao" style="margin-bottom: 0;">
+            <div class="card" data-card-id="pixVsCartao" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header"><h2>Comparativo: Pix vs Cartão</h2></div>
                 <div class="chart-container"><canvas id="chartPixVsCartao"></canvas></div>
             </div>
@@ -841,12 +851,11 @@
             }
         }
 
-        // Botão de Sincronização Rápida no Header
-        async function sincronizacaoRapidaHeader(btn) {
-            const syncText = document.getElementById('syncText');
-            const syncIcon = document.getElementById('syncIcon');
-            if (syncText) syncText.textContent = 'Sincronizando...';
-            if (syncIcon) syncIcon.textContent = '⏳';
+        // --- NOVAS FUNÇÕES EXCLUSIVAS DE UPLOAD E DOWNLOAD ---
+        async function baixarDoJsonBinBtn() {
+            const text = document.getElementById('downloadText');
+            const icon = document.getElementById('downloadIcon');
+            text.textContent = 'Baixando...'; icon.textContent = '⏳';
             
             try {
                 const dadosJsonBin = await carregarDadosDoJsonBin();
@@ -854,22 +863,31 @@
                     itens = dadosJsonBin;
                     localStorage.setItem('finanpro_itens', JSON.stringify(dadosJsonBin));
                     renderizarTudo();
-                    if (syncText) syncText.textContent = 'Sincronizado!';
-                    if (syncIcon) syncIcon.textContent = '✅';
+                    text.textContent = 'Baixado!'; icon.textContent = '✅';
+                    alert('Dados baixados da nuvem com sucesso!');
                 } else {
-                    await salvarDadosNoJsonBin(itens);
-                    if (syncText) syncText.textContent = 'Enviado!';
-                    if (syncIcon) syncIcon.textContent = '✅';
+                    text.textContent = 'Erro'; icon.textContent = '❌';
+                    alert('Nenhum dado encontrado na nuvem ou erro de conexão.');
                 }
-            } catch (error) {
-                console.error(error);
-                if (syncText) syncText.textContent = 'Erro ao sincronizar';
-                if (syncIcon) syncIcon.textContent = '❌';
+            } catch (e) {
+                text.textContent = 'Erro'; icon.textContent = '❌';
             }
-            setTimeout(() => {
-                if (syncText) syncText.textContent = 'Sincronizar JSONBin';
-                if (syncIcon) syncIcon.textContent = '☁️';
-            }, 3000);
+            setTimeout(() => { text.textContent = 'Baixar Nuvem'; icon.textContent = '⬇️'; }, 3000);
+        }
+
+        async function enviarParaJsonBinBtn() {
+            const text = document.getElementById('uploadText');
+            const icon = document.getElementById('uploadIcon');
+            text.textContent = 'Enviando...'; icon.textContent = '⏳';
+            
+            try {
+                await salvarDadosNoJsonBin(itens);
+                text.textContent = 'Salvo!'; icon.textContent = '✅';
+                alert('Dados atualizados na nuvem com sucesso!');
+            } catch (e) {
+                text.textContent = 'Erro'; icon.textContent = '❌';
+            }
+            setTimeout(() => { text.textContent = 'Salvar na Nuvem'; icon.textContent = '⬆️'; }, 3000);
         }
 
         let itens = [];
@@ -974,6 +992,11 @@
             carregarConfigJsonBinUI();
             itens = await carregarDados();
             inicializarAnos();
+            
+            // Inicia e restaura as ordens de drag and drop
+            restaurarOrdemDashboard();
+            configurarDragAndDropDashboard();
+            
             renderizarTudo();
         });
 
@@ -1582,7 +1605,6 @@
                 return a.id - b.id;
             });
 
-            // Cálculo dos totais de Gastos (Despesas) e Entradas (Receitas) para o cálculo percentual
             const totalDespesas = lancamentosOrdenados.filter(i => i.tipo === 'despesa').reduce((acc, i) => acc + i.valor, 0);
             const totalReceitas = lancamentosOrdenados.filter(i => i.tipo === 'receita').reduce((acc, i) => acc + i.valor, 0);
 
@@ -1625,7 +1647,6 @@
                         }
                     }
 
-                    // Cálculo da Porcentagem do Gasto (ou Entrada)
                     let pctTexto = '-';
                     if (l.tipo === 'despesa' && totalDespesas > 0) {
                         const pct = (l.valor / totalDespesas) * 100;
@@ -1695,7 +1716,7 @@
 
             if (modoExibicaoExtrato === 'analitica') {
                 renderPlanilhaAnalitica(dadosExtrato);
-                configurarDragAndDrop();
+                configurarDragAndDropExtrato();
                 return;
             }
 
@@ -1741,7 +1762,7 @@
             }
 
             container.innerHTML = html;
-            configurarDragAndDrop();
+            configurarDragAndDropExtrato();
         }
 
         function gerarCardHTML(item) {
@@ -1767,9 +1788,9 @@
             </div>`;
         }
 
-        // --- SISTEMA DE DRAG AND DROP ---
-        function configurarDragAndDrop() {
-            const draggables = document.querySelectorAll('[draggable="true"]');
+        // --- SISTEMA DE DRAG AND DROP DO EXTRATO ---
+        function configurarDragAndDropExtrato() {
+            const draggables = document.querySelectorAll('#containerExtrato [draggable="true"]');
             const container = document.getElementById('containerExtrato');
             
             draggables.forEach(draggable => {
@@ -1778,15 +1799,15 @@
                 });
                 draggable.addEventListener('dragend', () => {
                     draggable.classList.remove('dragging');
-                    salvarOrdemManual();
+                    salvarOrdemManualExtrato();
                 });
             });
 
             if (container) {
                 container.addEventListener('dragover', e => {
                     e.preventDefault();
-                    const afterElement = getDragAfterElement(container, e.clientY);
-                    const draggable = document.querySelector('.dragging');
+                    const afterElement = getDragAfterElementExtrato(container, e.clientY);
+                    const draggable = document.querySelector('#containerExtrato .dragging');
                     if (draggable) {
                         if (afterElement == null) {
                             if (draggable.parentElement === container || draggable.parentElement.classList.contains('extrato-grid') || draggable.parentElement.tagName === 'TBODY') {
@@ -1800,7 +1821,7 @@
             }
         }
 
-        function getDragAfterElement(container, y) {
+        function getDragAfterElementExtrato(container, y) {
             const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.dragging)')];
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
@@ -1813,10 +1834,72 @@
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
 
-        function salvarOrdemManual() {
-            const elements = document.querySelectorAll('[data-item-id]');
+        function salvarOrdemManualExtrato() {
+            const elements = document.querySelectorAll('#containerExtrato [data-item-id]');
             const newOrder = Array.from(elements).map(el => parseFloat(el.getAttribute('data-item-id')));
             localStorage.setItem('finanpro_extrato_manual_ordem', JSON.stringify(newOrder));
+        }
+
+        // --- SISTEMA DE DRAG AND DROP DO DASHBOARD ---
+        function configurarDragAndDropDashboard() {
+            const draggables = document.querySelectorAll('#dashboardGrid .card[draggable="true"]');
+            const container = document.getElementById('dashboardGrid');
+            
+            draggables.forEach(draggable => {
+                draggable.addEventListener('dragstart', () => { 
+                    draggable.classList.add('dragging'); 
+                });
+                draggable.addEventListener('dragend', () => {
+                    draggable.classList.remove('dragging');
+                    salvarOrdemDashboard();
+                });
+            });
+
+            if (container) {
+                container.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElementDash(container, e.clientX, e.clientY);
+                    const draggable = document.querySelector('#dashboardGrid .dragging');
+                    
+                    if (draggable && afterElement && draggable !== afterElement) {
+                        const box = afterElement.getBoundingClientRect();
+                        const offsetX = e.clientX - box.left - box.width / 2;
+                        
+                        // Decide se insere antes ou depois baseado na posição do mouse
+                        if (offsetX < 0) {
+                            container.insertBefore(draggable, afterElement);
+                        } else {
+                            container.insertBefore(draggable, afterElement.nextSibling);
+                        }
+                    }
+                });
+            }
+        }
+
+        function getDragAfterElementDash(container, x, y) {
+            const elements = [...container.querySelectorAll('.card[draggable="true"]:not(.dragging)')];
+            return elements.find(child => {
+                const box = child.getBoundingClientRect();
+                // Verifica se o mouse está sobre a área exata deste elemento (eixo X e Y)
+                return y >= box.top && y <= box.bottom && x >= box.left && x <= box.right;
+            });
+        }
+
+        function salvarOrdemDashboard() {
+            const cards = document.querySelectorAll('#dashboardGrid .card');
+            const ordem = Array.from(cards).map(c => c.getAttribute('data-card-id'));
+            localStorage.setItem('finanpro_dash_ordem', JSON.stringify(ordem));
+        }
+
+        function restaurarOrdemDashboard() {
+            const ordemSalva = JSON.parse(localStorage.getItem('finanpro_dash_ordem'));
+            if (ordemSalva) {
+                const container = document.getElementById('dashboardGrid');
+                ordemSalva.forEach(id => {
+                    const card = document.querySelector(`#dashboardGrid .card[data-card-id="${id}"]`);
+                    if (card) container.appendChild(card); // Move os itens na ordem correta
+                });
+            }
         }
 
     </script>
