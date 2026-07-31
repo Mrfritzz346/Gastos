@@ -1035,7 +1035,6 @@
             
             cards.forEach(card => {
                 card.addEventListener('dragstart', (e) => {
-                    // Evita arrastar o card se a origem for uma linha de tabela interna
                     if (e.target.closest('tr')) return;
                     card.classList.add('dragging');
                 });
@@ -1210,7 +1209,7 @@
 
         async function editarCelulaInline(id, campo, event) {
             event.stopPropagation();
-            const item = itens.find(i => i.id === id); if (!item) return;
+            const item = itens.find(i => Number(i.id) === Number(id)); if (!item) return;
             const el = event.currentTarget; if (el.querySelector('input, select')) return;
 
             if (campo === 'categoria') {
@@ -1290,24 +1289,113 @@
 
         async function salvarStorageAsync() { await salvarDados(itens); renderizarTudo(); }
 
+        // CORREÇÃO CRÍTICA NA EDIÇÃO: ATUALIZAR ITEM EXISTENTE SEM CRIAR NOVO REGISTRO NEM MUDAR DE LUGAR
         async function salvarItemForm(e) {
-            e.preventDefault(); const descBase = document.getElementById('desc').value; const valorInformado = parseFloat(document.getElementById('valor').value); const tipo = document.getElementById('tipo').value; const categoria = document.getElementById('categoria').value; const pagamento = (tipo === 'receita') ? 'Pix' : document.getElementById('pagamento').value; const isRecorrente = document.getElementById('recorrente').checked; const mesInicial = parseInt(document.getElementById('mes').value); const anoInicial = parseInt(document.getElementById('anoInput').value);
-            let grupoId = 'grupo_' + Date.now() + '_' + Math.random(); let itensAnterioresParaManter = []; let qtdAnteriores = 0;
+            e.preventDefault(); 
+            const descBase = document.getElementById('desc').value; 
+            const valorInformado = parseFloat(document.getElementById('valor').value); 
+            const tipo = document.getElementById('tipo').value; 
+            const categoria = document.getElementById('categoria').value; 
+            const pagamento = (tipo === 'receita') ? 'Pix' : document.getElementById('pagamento').value; 
+            const isRecorrente = document.getElementById('recorrente').checked; 
+            const mesInicial = parseInt(document.getElementById('mes').value); 
+            const anoInicial = parseInt(document.getElementById('anoInput').value);
 
-            if (idEditando !== null) { const itemAntigo = itens.find(i => i.id === idEditando); if (itemAntigo && itemAntigo.grupoId) { grupoId = itemAntigo.grupoId; const grupoItens = itens.filter(i => i.grupoId === grupoId).sort((a, b) => (parseInt(a.ano)*100 + parseInt(a.mes)) - (parseInt(b.ano)*100 + parseInt(b.mes))); itensAnterioresParaManter = grupoItens.filter(i => (parseInt(i.ano)*100 + parseInt(i.mes)) < (anoInicial * 100 + mesInicial)); qtdAnteriores = itensAnterioresParaManter.length; itens = itens.filter(i => i.grupoId !== grupoId); } else if (itemAntigo) { itens = itens.filter(i => i.id !== idEditando); } }
+            let numRepeticoes = isRecorrente ? (12 - mesInicial + 1) : ((tipo === 'despesa' && pagamento === 'Cartão') ? parseInt(document.getElementById('parcelas').value) : 1);
 
-            itensAnterioresParaManter.forEach(item => { item.categoria = categoria; item.tipo = tipo; item.pagamento = pagamento; }); itens.push(...itensAnterioresParaManter);
-            let numRepeticoes = isRecorrente ? (12 - mesInicial + 1) : ((tipo === 'despesa' && pagamento === 'Cartão') ? parseInt(document.getElementById('parcelas').value) : 1); const totalParcelasFinal = qtdAnteriores + numRepeticoes;
-
-            for (let i = 0; i < numRepeticoes; i++) { let mesCalc = mesInicial + i, anoCalc = anoInicial; while (mesCalc > 12) { mesCalc -= 12; anoCalc += 1; } let descFinal = descBase; if (!isRecorrente && totalParcelasFinal > 1) descFinal = `${descBase} (${qtdAnteriores + i + 1}/${totalParcelasFinal}) [Parcela]`; else if (isRecorrente) descFinal = `${descBase} (Recorrente)`;
-                itens.push({ id: Date.now() + Math.random() + i, grupoId: grupoId, desc: descFinal, valor: valorInformado, tipo: tipo, categoria: categoria, pagamento: pagamento, mes: String(mesCalc).padStart(2, '0'), ano: String(anoCalc), status: 'efetivado' });
-            } cancelarEdicao(); await salvarStorageAsync();
+            if (idEditando !== null) {
+                // EDIÇÃO DE ITEM EXISTENTE
+                const index = itens.findIndex(i => Number(i.id) === Number(idEditando));
+                if (index !== -1) {
+                    const itemExistente = itens[index];
+                    
+                    // Se for atualização de um único item (sem expansão para múltiplas parcelas novas)
+                    if (numRepeticoes === 1 && !isRecorrente) {
+                        itens[index] = {
+                            ...itemExistente,
+                            desc: descBase,
+                            valor: valorInformado,
+                            tipo: tipo,
+                            categoria: categoria,
+                            pagamento: pagamento,
+                            mes: String(mesInicial).padStart(2, '0'),
+                            ano: String(anoInicial),
+                            status: 'efetivado'
+                        };
+                    } else {
+                        // Caso esteja editando e expandindo para parcelado/recorrente
+                        let grupoId = itemExistente.grupoId || ('grupo_' + Date.now() + '_' + Math.random());
+                        
+                        // Remove itens antigos do mesmo grupo
+                        itens = itens.filter(i => Number(i.id) !== Number(idEditando) && (grupoId ? i.grupoId !== grupoId : true));
+                        
+                        for (let i = 0; i < numRepeticoes; i++) {
+                            let mesCalc = mesInicial + i, anoCalc = anoInicial;
+                            while (mesCalc > 12) { mesCalc -= 12; anoCalc += 1; }
+                            let descFinal = descBase;
+                            if (!isRecorrente && numRepeticoes > 1) descFinal = `${descBase} (${i + 1}/${numRepeticoes}) [Parcela]`;
+                            else if (isRecorrente) descFinal = `${descBase} (Recorrente)`;
+                            
+                            // Mantém o ID original para a 1ª parcela manter o lugar
+                            let itemId = (i === 0) ? Number(idEditando) : (Date.now() + (i * 10) + Math.floor(Math.random() * 5));
+                            
+                            const novoObj = {
+                                id: itemId,
+                                grupoId: grupoId,
+                                desc: descFinal,
+                                valor: valorInformado,
+                                tipo: tipo,
+                                categoria: categoria,
+                                pagamento: pagamento,
+                                mes: String(mesCalc).padStart(2, '0'),
+                                ano: String(anoCalc),
+                                status: 'efetivado'
+                            };
+                            
+                            if (i === 0) {
+                                // Insere no exato mesmo índice original na lista
+                                itens.splice(index, 0, novoObj);
+                            } else {
+                                itens.push(novoObj);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // CRIAÇÃO DE NOVO ITEM
+                let grupoId = 'grupo_' + Date.now() + '_' + Math.random();
+                const baseTimestamp = Date.now();
+                for (let i = 0; i < numRepeticoes; i++) { 
+                    let mesCalc = mesInicial + i, anoCalc = anoInicial; 
+                    while (mesCalc > 12) { mesCalc -= 12; anoCalc += 1; } 
+                    let descFinal = descBase; 
+                    if (!isRecorrente && numRepeticoes > 1) descFinal = `${descBase} (${i + 1}/${numRepeticoes}) [Parcela]`; 
+                    else if (isRecorrente) descFinal = `${descBase} (Recorrente)`;
+                    
+                    let novoId = baseTimestamp + (i * 10) + Math.floor(Math.random() * 5);
+                    itens.push({ 
+                        id: novoId, 
+                        grupoId: (numRepeticoes > 1 || isRecorrente) ? grupoId : null, 
+                        desc: descFinal, 
+                        valor: valorInformado, 
+                        tipo: tipo, 
+                        categoria: categoria, 
+                        pagamento: pagamento, 
+                        mes: String(mesCalc).padStart(2, '0'), 
+                        ano: String(anoCalc), 
+                        status: 'efetivado' 
+                    });
+                }
+            } 
+            
+            cancelarEdicao(); 
+            await salvarStorageAsync();
         }
 
-        async function duplicarItem(id) { const item = itens.find(i => i.id === id); if (!item) return; const novoItem = { ...item, id: Date.now() + Math.random(), grupoId: 'grupo_' + Date.now() + '_' + Math.random() }; novoItem.desc = !novoItem.desc.includes('(Cópia)') ? `${novoItem.desc} (Cópia)` : `${novoItem.desc} +`; itens.push(novoItem); await salvarStorageAsync(); }
+        async function duplicarItem(id) { const item = itens.find(i => Number(i.id) === Number(id)); if (!item) return; const novoItem = { ...item, id: Date.now() + Math.floor(Math.random() * 100), grupoId: 'grupo_' + Date.now() + '_' + Math.random() }; novoItem.desc = !novoItem.desc.includes('(Cópia)') ? `${novoItem.desc} (Cópia)` : `${novoItem.desc} +`; itens.push(novoItem); await salvarStorageAsync(); }
 
         function editarItem(id) {
-            const item = itens.find(i => i.id === id); if (!item) return; idEditando = id;
+            const item = itens.find(i => Number(i.id) === Number(id)); if (!item) return; idEditando = item.id;
             document.getElementById('tituloFormulario').innerHTML = "<span class=\"drag-handle\" title=\"Arraste para mover\">⣿</span> ✏️ Editar Lançamento"; document.getElementById('btnSalvarForm').textContent = "Salvar Alterações"; document.getElementById('btnSalvarForm').className = "btn-success"; document.getElementById('btnCancelarEdicao').style.display = "block";
             document.getElementById('desc').value = item.desc.replace(/ \(\d+\/\d+\) \[Parcela\]/, '').replace(/ \(Recorrente\)/, ''); document.getElementById('valor').value = item.valor; document.getElementById('tipo').value = item.tipo; atualizarCategoriasNoFormulario(); document.getElementById('categoria').value = item.categoria; document.getElementById('pagamento').value = item.pagamento;
             const itensDoGrupo = item.grupoId ? itens.filter(i => i.grupoId === item.grupoId) : []; let isRec = item.desc.includes('(Recorrente)');
@@ -1320,7 +1408,7 @@
 
         async function excluirItem(id, grupoId) {
             const itensDoGrupo = grupoId ? itens.filter(i => i.grupoId === grupoId) : [];
-            if (itensDoGrupo.length > 1) { if (confirm("Este item faz parte de um parcelamento ou recorrência.\n\nDeseja apagar TODOS os meses desta compra?\n• [OK] Apaga todos\n• [Cancelar] Apaga APENAS este mês")) itens = itens.filter(item => item.grupoId !== grupoId); else itens = itens.filter(item => item.id !== id); } else if (confirm("Deseja apagar este lançamento?")) itens = itens.filter(item => item.id !== id); await salvarStorageAsync();
+            if (itensDoGrupo.length > 1) { if (confirm("Este item faz parte de um parcelamento ou recorrência.\n\nDeseja apagar TODOS os meses desta compra?\n• [OK] Apaga todos\n• [Cancelar] Apaga APENAS este mês")) itens = itens.filter(item => item.grupoId !== grupoId); else itens = itens.filter(item => Number(item.id) !== Number(id)); } else if (confirm("Deseja apagar este lançamento?")) itens = itens.filter(item => Number(item.id) !== Number(id)); await salvarStorageAsync();
         }
 
         function fazerBackup() { const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(itens, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "financas_pessoais_backup.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); }
@@ -1365,7 +1453,7 @@
                 painelFiltros.style.display = 'none';
             }
 
-            // ORDENAÇÃO PELOS TÍTULOS DE COLUNAS DO EXTRATO
+            // ORDENAÇÃO PELOS TÍTULOS DE COLUNAS DO EXTRATO OU MANUTENÇÃO DA POSIÇÃO ORIGINAL
             if (sortExtratoField) {
                 dadosExtrato.sort((a, b) => {
                     if (sortExtratoField === 'tipo') {
@@ -1374,7 +1462,7 @@
                         if (rankA !== rankB) {
                             return sortExtratoDir === 'asc' ? rankA - rankB : rankB - rankA;
                         }
-                        return a.id - b.id; // Garantir que itens mais novos (maior ID) fiquem por último (embaixo)
+                        return 0;
                     }
                     if (sortExtratoField === 'data') {
                         const dateA = (parseInt(a.ano) || 0) * 100 + (parseInt(a.mes) || 0);
@@ -1382,26 +1470,33 @@
                         if (dateA !== dateB) {
                             return sortExtratoDir === 'asc' ? dateA - dateB : dateB - dateA;
                         }
-                        return a.id - b.id; // Garantir que itens mais novos (maior ID) fiquem por último (embaixo)
+                        return 0;
                     }
                     let valA = a[sortExtratoField], valB = b[sortExtratoField];
-                    if (sortExtratoField === 'id') return sortExtratoDir === 'asc' ? a.id - b.id : b.id - a.id;
+                    if (sortExtratoField === 'id') return sortExtratoDir === 'asc' ? Number(a.id) - Number(b.id) : Number(b.id) - Number(a.id);
                     if (sortExtratoField === 'valor') {
                         if (a.valor !== b.valor) {
                             return sortExtratoDir === 'asc' ? a.valor - b.valor : b.valor - a.valor;
                         }
-                        return a.id - b.id;
+                        return 0;
                     }
                     if (typeof valA === 'string') {
-                        const cmp = sortExtratoDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                        if (cmp !== 0) return cmp;
-                        return a.id - b.id;
+                        return sortExtratoDir === 'asc' ? valA.localeCompare(valB, 'pt-BR') : valB.localeCompare(valA, 'pt-BR');
                     }
-                    return a.id - b.id;
+                    return 0;
                 });
             } else {
                 let manualOrder = JSON.parse(localStorage.getItem('finanpro_extrato_manual_ordem')) || [];
-                if (manualOrder.length > 0) { dadosExtrato.sort((a, b) => { let idxA = manualOrder.indexOf(a.id); let idxB = manualOrder.indexOf(b.id); if (idxA !== -1 && idxB !== -1) return idxA - idxB; if (idxA !== -1) return -1; if (idxB !== -1) return 1; return a.id - b.id; }); } else { dadosExtrato.sort((a, b) => a.id - b.id); }
+                if (manualOrder.length > 0) { 
+                    dadosExtrato.sort((a, b) => { 
+                        let idxA = manualOrder.indexOf(Number(a.id)); 
+                        let idxB = manualOrder.indexOf(Number(b.id)); 
+                        if (idxA !== -1 && idxB !== -1) return idxA - idxB; 
+                        if (idxA !== -1) return -1; 
+                        if (idxB !== -1) return 1; 
+                        return 0; 
+                    }); 
+                }
             }
 
             let totalRec = 0, totalDesp = 0; dadosFiltrados.forEach(i => { if (i.tipo === 'receita') totalRec += i.valor; if (i.tipo === 'despesa') totalDesp += i.valor; }); const saldoPeriodo = totalRec - totalDesp;
