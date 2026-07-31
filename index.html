@@ -209,7 +209,6 @@
 
         .card:hover { border-color: rgba(255, 255, 255, 0.12); }
         
-        /* Drag & Drop Styles para Cards */
         .card[draggable="true"] { cursor: default; }
         .drag-handle {
             cursor: grab;
@@ -667,7 +666,7 @@
                             <input type="text" id="desc" placeholder="Ex: Salário, Aluguel..." required>
                         </div>
                         <div>
-                            <label for="valor">Valor (R$)</label>
+                            <label for="valor" id="lblValor">Valor (R$)</label>
                             <input type="number" step="0.01" id="valor" placeholder="0.00" required>
                         </div>
                         <div>
@@ -689,8 +688,8 @@
                             </select>
                         </div>
                         <div id="containerParcelas" style="display: none;">
-                            <label for="parcelas">Qtd Parcelas</label>
-                            <select id="parcelas">
+                            <label for="parcelas">Qtd Total Parcelas</label>
+                            <select id="parcelas" onchange="toggleParcelas()">
                                 <option value="1">1x (À vista)</option><option value="2">2x</option><option value="3">3x</option>
                                 <option value="4">4x</option><option value="5">5x</option><option value="6">6x</option>
                                 <option value="7">7x</option><option value="8">8x</option><option value="9">9x</option>
@@ -715,9 +714,30 @@
                             <button type="button" id="btnCancelarEdicao" class="btn-danger" style="display: none; width: auto; padding: 11px 14px;" onclick="cancelarEdicao()">Cancelar</button>
                         </div>
                     </div>
+
+                    <!-- OPÇÕES AVANÇADAS DE PARCELAMENTO (APARECE APENAS QUANDO FOR CARTÃO E > 1X) -->
+                    <div id="containerOpcoesParcelamento" style="display: none; background: rgba(168, 85, 247, 0.06); padding: 14px; border-radius: 10px; border: 1px dashed rgba(168, 85, 247, 0.3); margin-top: 16px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: center;">
+                            <div>
+                                <label for="parcelaInicial">Iniciar na parcela nº</label>
+                                <input type="number" id="parcelaInicial" min="1" max="12" value="1" placeholder="Ex: 5 se já pagou 4">
+                            </div>
+                            <div>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-size: 0.85rem; color: var(--text-main); margin-bottom: 0;">
+                                    <input type="checkbox" id="chkValorDiferente" onchange="toggleValorDiferente()" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                                    1ª Parcela com valor diferente?
+                                </label>
+                            </div>
+                            <div id="containerValor1a" style="display: none;">
+                                <label for="valorPrimeiraParcela">Valor da 1ª Parcela (R$)</label>
+                                <input type="number" step="0.01" id="valorPrimeiraParcela" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="containerRecorrenteBox" style="margin-top: 16px; display: flex; align-items: center; gap: 12px; background: rgba(139, 92, 246, 0.06); padding: 14px; border-radius: 10px; border: 1px dashed rgba(139, 92, 246, 0.3);">
                         <input type="checkbox" id="recorrente" onchange="toggleRecorrente()" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
-                        <label for="recorrente" style="margin-bottom: 0; cursor: pointer; color: var(--text-main); font-weight: 600;">
+                        <label for="recorrente" style="margin-bottom: 0; cursor: pointer; color: var(--text-main); font-weight: 600; text-transform: none;">
                             🔄 Repetir mensalmente com o mesmo valor até dezembro deste ano (Despesa/Entrada Recorrente)
                         </label>
                     </div>
@@ -1083,7 +1103,6 @@
                 if (card) grid.appendChild(card);
             });
         }
-        // =======================================================================
 
         function alterarModoExtrato(modo) {
             modoExibicaoExtrato = modo;
@@ -1239,9 +1258,63 @@
             }
         }
 
-        function toggleTipoForm() { const tipo = document.getElementById('tipo').value; if (tipo === 'receita') { document.getElementById('containerPagamento').style.display = 'none'; document.getElementById('containerParcelas').style.display = 'none'; document.getElementById('containerRecorrenteBox').style.display = 'flex'; } else { document.getElementById('containerPagamento').style.display = 'block'; document.getElementById('containerRecorrenteBox').style.display = 'flex'; toggleParcelas(); } }
-        function toggleParcelas() { const pagamento = document.getElementById('pagamento').value; const isRecorrente = document.getElementById('recorrente').checked; const tipo = document.getElementById('tipo').value; if (tipo === 'receita') document.getElementById('containerParcelas').style.display = 'none'; else document.getElementById('containerParcelas').style.display = (pagamento === 'Cartão' && !isRecorrente) ? 'block' : 'none'; }
-        function toggleRecorrente() { const isRecorrente = document.getElementById('recorrente').checked; const pagamento = document.getElementById('pagamento').value; const tipo = document.getElementById('tipo').value; if (tipo === 'receita') document.getElementById('containerParcelas').style.display = 'none'; else document.getElementById('containerParcelas').style.display = (isRecorrente || pagamento !== 'Cartão') ? 'none' : 'block'; }
+        function toggleTipoForm() { 
+            const tipo = document.getElementById('tipo').value; 
+            if (tipo === 'receita') { 
+                document.getElementById('containerPagamento').style.display = 'none'; 
+                document.getElementById('containerParcelas').style.display = 'none'; 
+                document.getElementById('containerOpcoesParcelamento').style.display = 'none';
+                document.getElementById('containerRecorrenteBox').style.display = 'flex'; 
+            } else { 
+                document.getElementById('containerPagamento').style.display = 'block'; 
+                document.getElementById('containerRecorrenteBox').style.display = 'flex'; 
+                toggleParcelas(); 
+            } 
+        }
+
+        function toggleParcelas() { 
+            const pagamento = document.getElementById('pagamento').value; 
+            const isRecorrente = document.getElementById('recorrente').checked; 
+            const tipo = document.getElementById('tipo').value; 
+            const qttParcelas = parseInt(document.getElementById('parcelas').value);
+
+            if (tipo === 'receita') {
+                document.getElementById('containerParcelas').style.display = 'none';
+                document.getElementById('containerOpcoesParcelamento').style.display = 'none';
+            } else {
+                const exibeParcelas = (pagamento === 'Cartão' && !isRecorrente);
+                document.getElementById('containerParcelas').style.display = exibeParcelas ? 'block' : 'none';
+                
+                // Exibe as opções avançadas apenas se for Cartão e tiver 2x ou mais
+                const exibeAvancado = exibeParcelas && qttParcelas > 1;
+                document.getElementById('containerOpcoesParcelamento').style.display = exibeAvancado ? 'block' : 'none';
+            }
+            toggleValorDiferente();
+        }
+
+        function toggleValorDiferente() {
+            const chk = document.getElementById('chkValorDiferente').checked;
+            const containerVal1 = document.getElementById('containerValor1a');
+            const lblValor = document.getElementById('lblValor');
+            
+            if (chk && document.getElementById('containerOpcoesParcelamento').style.display !== 'none') {
+                containerVal1.style.display = 'block';
+                lblValor.textContent = "Valor Demais Parcelas (R$)";
+            } else {
+                containerVal1.style.display = 'none';
+                lblValor.textContent = "Valor (R$)";
+            }
+        }
+
+        function toggleRecorrente() { 
+            const isRecorrente = document.getElementById('recorrente').checked; 
+            if (isRecorrente) {
+                document.getElementById('containerParcelas').style.display = 'none';
+                document.getElementById('containerOpcoesParcelamento').style.display = 'none';
+            } else {
+                toggleParcelas();
+            }
+        }
 
         function mudarAba(aba) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -1289,10 +1362,10 @@
 
         async function salvarStorageAsync() { await salvarDados(itens); renderizarTudo(); }
 
-        // CORREÇÃO CRÍTICA NA EDIÇÃO: ATUALIZAR ITEM EXISTENTE SEM CRIAR NOVO REGISTRO NEM MUDAR DE LUGAR
+        // ================= NOVO SISTEMA DE CRIAÇÃO E EDIÇÃO COM PARCELAS AVANÇADAS =================
         async function salvarItemForm(e) {
             e.preventDefault(); 
-            const descBase = document.getElementById('desc').value; 
+            const descBase = document.getElementById('desc').value.trim(); 
             const valorInformado = parseFloat(document.getElementById('valor').value); 
             const tipo = document.getElementById('tipo').value; 
             const categoria = document.getElementById('categoria').value; 
@@ -1301,7 +1374,24 @@
             const mesInicial = parseInt(document.getElementById('mes').value); 
             const anoInicial = parseInt(document.getElementById('anoInput').value);
 
-            let numRepeticoes = isRecorrente ? (12 - mesInicial + 1) : ((tipo === 'despesa' && pagamento === 'Cartão') ? parseInt(document.getElementById('parcelas').value) : 1);
+            // Dados de Parcelamento Avançado
+            const qtdTotalParcelas = (tipo === 'despesa' && pagamento === 'Cartão' && !isRecorrente) ? parseInt(document.getElementById('parcelas').value) : 1;
+            const parcelaInicial = (qtdTotalParcelas > 1) ? (parseInt(document.getElementById('parcelaInicial').value) || 1) : 1;
+            const temValorDiferente = (qtdTotalParcelas > 1) && document.getElementById('chkValorDiferente').checked;
+            const valor1aParcela = temValorDiferente ? (parseFloat(document.getElementById('valorPrimeiraParcela').value) || valorInformado) : valorInformado;
+
+            if (parcelaInicial > qtdTotalParcelas) {
+                alert("A parcela inicial não pode ser maior do que a quantidade total de parcelas!");
+                return;
+            }
+
+            // Quantidade real de itens a serem inseridos na planilha
+            let numRepeticoes = 1;
+            if (isRecorrente) {
+                numRepeticoes = (12 - mesInicial + 1);
+            } else if (qtdTotalParcelas > 1) {
+                numRepeticoes = (qtdTotalParcelas - parcelaInicial + 1);
+            }
 
             if (idEditando !== null) {
                 // EDIÇÃO DE ITEM EXISTENTE
@@ -1309,7 +1399,6 @@
                 if (index !== -1) {
                     const itemExistente = itens[index];
                     
-                    // Se for atualização de um único item (sem expansão para múltiplas parcelas novas)
                     if (numRepeticoes === 1 && !isRecorrente) {
                         itens[index] = {
                             ...itemExistente,
@@ -1323,27 +1412,33 @@
                             status: 'efetivado'
                         };
                     } else {
-                        // Caso esteja editando e expandindo para parcelado/recorrente
                         let grupoId = itemExistente.grupoId || ('grupo_' + Date.now() + '_' + Math.random());
-                        
-                        // Remove itens antigos do mesmo grupo
                         itens = itens.filter(i => Number(i.id) !== Number(idEditando) && (grupoId ? i.grupoId !== grupoId : true));
                         
                         for (let i = 0; i < numRepeticoes; i++) {
                             let mesCalc = mesInicial + i, anoCalc = anoInicial;
                             while (mesCalc > 12) { mesCalc -= 12; anoCalc += 1; }
-                            let descFinal = descBase;
-                            if (!isRecorrente && numRepeticoes > 1) descFinal = `${descBase} (${i + 1}/${numRepeticoes}) [Parcela]`;
-                            else if (isRecorrente) descFinal = `${descBase} (Recorrente)`;
                             
-                            // Mantém o ID original para a 1ª parcela manter o lugar
+                            let descFinal = descBase;
+                            let valorItem = valorInformado;
+
+                            if (!isRecorrente && qtdTotalParcelas > 1) {
+                                let numParcAtual = parcelaInicial + i;
+                                descFinal = `${descBase} (${String(numParcAtual).padStart(2, '0')}/${String(qtdTotalParcelas).padStart(2, '0')})`;
+                                if (numParcAtual === 1 && temValorDiferente) {
+                                    valorItem = valor1aParcela;
+                                }
+                            } else if (isRecorrente) {
+                                descFinal = `${descBase} (Recorrente)`;
+                            }
+                            
                             let itemId = (i === 0) ? Number(idEditando) : (Date.now() + (i * 10) + Math.floor(Math.random() * 5));
                             
                             const novoObj = {
                                 id: itemId,
                                 grupoId: grupoId,
                                 desc: descFinal,
-                                valor: valorInformado,
+                                valor: valorItem,
                                 tipo: tipo,
                                 categoria: categoria,
                                 pagamento: pagamento,
@@ -1353,7 +1448,6 @@
                             };
                             
                             if (i === 0) {
-                                // Insere no exato mesmo índice original na lista
                                 itens.splice(index, 0, novoObj);
                             } else {
                                 itens.push(novoObj);
@@ -1362,22 +1456,33 @@
                     }
                 }
             } else {
-                // CRIAÇÃO DE NOVO ITEM
+                // CRIAÇÃO DE NOVOS ITENS
                 let grupoId = 'grupo_' + Date.now() + '_' + Math.random();
                 const baseTimestamp = Date.now();
+                
                 for (let i = 0; i < numRepeticoes; i++) { 
                     let mesCalc = mesInicial + i, anoCalc = anoInicial; 
                     while (mesCalc > 12) { mesCalc -= 12; anoCalc += 1; } 
+                    
                     let descFinal = descBase; 
-                    if (!isRecorrente && numRepeticoes > 1) descFinal = `${descBase} (${i + 1}/${numRepeticoes}) [Parcela]`; 
-                    else if (isRecorrente) descFinal = `${descBase} (Recorrente)`;
+                    let valorItem = valorInformado;
+
+                    if (!isRecorrente && qtdTotalParcelas > 1) {
+                        let numParcAtual = parcelaInicial + i;
+                        descFinal = `${descBase} (${String(numParcAtual).padStart(2, '0')}/${String(qtdTotalParcelas).padStart(2, '0')})`;
+                        if (numParcAtual === 1 && temValorDiferente) {
+                            valorItem = valor1aParcela;
+                        }
+                    } else if (isRecorrente) {
+                        descFinal = `${descBase} (Recorrente)`;
+                    }
                     
                     let novoId = baseTimestamp + (i * 10) + Math.floor(Math.random() * 5);
                     itens.push({ 
                         id: novoId, 
-                        grupoId: (numRepeticoes > 1 || isRecorrente) ? grupoId : null, 
+                        grupoId: (qtdTotalParcelas > 1 || isRecorrente) ? grupoId : null, 
                         desc: descFinal, 
-                        valor: valorInformado, 
+                        valor: valorItem, 
                         tipo: tipo, 
                         categoria: categoria, 
                         pagamento: pagamento, 
@@ -1397,14 +1502,50 @@
         function editarItem(id) {
             const item = itens.find(i => Number(i.id) === Number(id)); if (!item) return; idEditando = item.id;
             document.getElementById('tituloFormulario').innerHTML = "<span class=\"drag-handle\" title=\"Arraste para mover\">⣿</span> ✏️ Editar Lançamento"; document.getElementById('btnSalvarForm').textContent = "Salvar Alterações"; document.getElementById('btnSalvarForm').className = "btn-success"; document.getElementById('btnCancelarEdicao').style.display = "block";
-            document.getElementById('desc').value = item.desc.replace(/ \(\d+\/\d+\) \[Parcela\]/, '').replace(/ \(Recorrente\)/, ''); document.getElementById('valor').value = item.valor; document.getElementById('tipo').value = item.tipo; atualizarCategoriasNoFormulario(); document.getElementById('categoria').value = item.categoria; document.getElementById('pagamento').value = item.pagamento;
-            const itensDoGrupo = item.grupoId ? itens.filter(i => i.grupoId === item.grupoId) : []; let isRec = item.desc.includes('(Recorrente)');
-            document.getElementById('mes').value = item.mes; document.getElementById('anoInput').value = item.ano; document.getElementById('recorrente').checked = isRec;
-            if (item.pagamento === 'Cartão' && !isRec) document.getElementById('parcelas').value = (itensDoGrupo.length > 1 && itensDoGrupo.length <= 12) ? String(itensDoGrupo.length) : "1";
-            toggleTipoForm(); mudarAba('matriz'); document.getElementById('formItem').scrollIntoView({ behavior: 'smooth' });
+            
+            // Limpa sufixos do nome
+            document.getElementById('desc').value = item.desc.replace(/ \(\d+\/\d+\)/, '').replace(/ \(Recorrente\)/, ''); 
+            document.getElementById('valor').value = item.valor; 
+            document.getElementById('tipo').value = item.tipo; 
+            atualizarCategoriasNoFormulario(); 
+            document.getElementById('categoria').value = item.categoria; 
+            document.getElementById('pagamento').value = item.pagamento;
+            
+            const itensDoGrupo = item.grupoId ? itens.filter(i => i.grupoId === item.grupoId) : []; 
+            let isRec = item.desc.includes('(Recorrente)');
+            
+            document.getElementById('mes').value = item.mes; 
+            document.getElementById('anoInput').value = item.ano; 
+            document.getElementById('recorrente').checked = isRec;
+            
+            if (item.pagamento === 'Cartão' && !isRec) {
+                document.getElementById('parcelas').value = (itensDoGrupo.length > 1 && itensDoGrupo.length <= 12) ? String(itensDoGrupo.length) : "1";
+            }
+            
+            toggleTipoForm(); 
+            mudarAba('matriz'); 
+            document.getElementById('formItem').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function cancelarEdicao() { idEditando = null; document.getElementById('tituloFormulario').innerHTML = "<span class=\"drag-handle\" title=\"Arraste para mover\">⣿</span> ✨ Novo Lançamento 🖱️"; document.getElementById('btnSalvarForm').textContent = "Adicionar"; document.getElementById('btnSalvarForm').className = "btn-add"; document.getElementById('btnCancelarEdicao').style.display = "none"; document.getElementById('desc').value = ''; document.getElementById('valor').value = ''; document.getElementById('recorrente').checked = false; toggleTipoForm(); document.getElementById('desc').focus(); }
+        function cancelarEdicao() { 
+            idEditando = null; 
+            document.getElementById('tituloFormulario').innerHTML = "<span class=\"drag-handle\" title=\"Arraste para mover\">⣿</span> ✨ Novo Lançamento 🖱️"; 
+            document.getElementById('btnSalvarForm').textContent = "Adicionar"; 
+            document.getElementById('btnSalvarForm').className = "btn-add"; 
+            document.getElementById('btnCancelarEdicao').style.display = "none"; 
+            document.getElementById('desc').value = ''; 
+            document.getElementById('valor').value = ''; 
+            document.getElementById('recorrente').checked = false; 
+            
+            // Reseta parcelamento avançado
+            document.getElementById('parcelas').value = "1";
+            document.getElementById('parcelaInicial').value = "1";
+            document.getElementById('chkValorDiferente').checked = false;
+            document.getElementById('valorPrimeiraParcela').value = '';
+            
+            toggleTipoForm(); 
+            document.getElementById('desc').focus(); 
+        }
 
         async function excluirItem(id, grupoId) {
             const itensDoGrupo = grupoId ? itens.filter(i => i.grupoId === grupoId) : [];
