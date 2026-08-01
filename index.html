@@ -504,6 +504,17 @@
         .cat-chip button { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem; padding: 0; transition: transform 0.2s; }
         .cat-chip button:hover { transform: scale(1.2); }
 
+        /* Estilos para a lista de Hierarquia de Categorias */
+        .cat-order-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; max-height: 400px; overflow-y: auto; padding-right: 6px; }
+        .cat-order-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--input-bg); border: 1px solid var(--card-border);
+            padding: 8px 14px; border-radius: 10px; font-size: 0.85rem;
+        }
+        .cat-order-btns { display: flex; gap: 6px; }
+        .btn-move { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--card-border); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        .btn-move:hover { background: var(--primary); color: white; }
+
         /* Floating Column Filter Popover */
         .col-filter-popover {
             position: fixed;
@@ -715,7 +726,7 @@
                         </div>
                     </div>
 
-                    <!-- OPÇÕES AVANÇADAS DE PARCELAMENTO (APARECE APENAS QUANDO FOR CARTÃO E > 1X) -->
+                    <!-- OPÇÕES AVANÇADAS DE PARCELAMENTO -->
                     <div id="containerOpcoesParcelamento" style="display: none; background: rgba(168, 85, 247, 0.06); padding: 14px; border-radius: 10px; border: 1px dashed rgba(168, 85, 247, 0.3); margin-top: 16px;">
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: center;">
                             <div>
@@ -744,7 +755,7 @@
                 </form>
             </div>
 
-            <!-- HEATMAP TOTALMENTE MOVÍVEL (DRAGGABLE) -->
+            <!-- HEATMAP -->
             <div class="card" data-card-id="heatmapGastos" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header">
                     <h2><span class="drag-handle" title="Arraste para mover">⣿</span> 🔥 Mapa de Calor (Heatmap) de Gastos - Categoria vs Mês</h2>
@@ -764,7 +775,7 @@
                 </div>
             </div>
 
-            <!-- MATRIZ DE GASTOS TOTALMENTE MOVÍVEL (DRAGGABLE) -->
+            <!-- MATRIZ DE GASTOS -->
             <div class="card" data-card-id="matrizGastos" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header">
                     <h2><span class="drag-handle" title="Arraste para mover">⣿</span> 📑 Matriz de Gastos Detalhada</h2>
@@ -785,7 +796,7 @@
                 </div>
             </div>
 
-            <!-- EXTRATO TOTALMENTE MOVÍVEL (DRAGGABLE) -->
+            <!-- EXTRATO -->
             <div class="card" data-card-id="extratoLancamentos" style="margin-bottom: 0;" draggable="true">
                 <div class="card-header" style="flex-direction: column; align-items: stretch; gap: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;" id="headerExtrato">
@@ -801,11 +812,12 @@
                             Buscar em todo o histórico
                         </label>
                         <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-                            <button id="btnModoCards" class="btn-view-toggle active" onclick="alterarModoExtrato('cards')" title="Exibir lado a lado em cards">📇 Lado a Lado</button>
+                            <button id="btnModoVisaoPadrao" class="btn-view-toggle active" onclick="alterarModoExtrato('visaoPadrao')" title="Visão em planilha ordenada por prioridade de categorias">📌 Visão Padrão</button>
+                            <button id="btnModoCards" class="btn-view-toggle" onclick="alterarModoExtrato('cards')" title="Exibir lado a lado em cards">📇 Lado a Lado</button>
                             <button id="btnModoTabela" class="btn-view-toggle" onclick="alterarModoExtrato('tabela')" title="Exibir em lista sequencial com cabeçalhos interativos">📄 Tabela</button>
                             <button id="btnModoCategorias" class="btn-view-toggle" onclick="alterarModoExtrato('categorias')" title="Exibir agrupado por categorias">📂 Por Categorias</button>
                             <button id="btnModoAnalitica" class="btn-view-toggle" onclick="alterarModoExtrato('analitica')" title="Visão de planilha analítica de alta densidade">📊 Planilha Analítica</button>
-                            <button class="btn-view-toggle" onclick="resetarFiltrosEOrdem()" title="Restaurar ordem e limpar filtros das colunas">🔄 Resetar Filtros</button>
+                            <button class="btn-view-toggle" onclick="limparFiltrosColunas()" title="Limpar apenas filtros de coluna" style="padding: 8px 10px;">🔄 Limpar Filtros</button>
                         </div>
                     </div>
                     <div id="painelFiltrosAtivos" style="display: none; background: rgba(139, 92, 246, 0.1); border: 1px solid var(--primary); border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; justify-content: space-between; align-items: center;">
@@ -821,6 +833,17 @@
     </div>
 
     <div id="tabConfig" class="tab-content">
+        <div class="card" style="margin-bottom: 24px; border-top: 3px solid var(--primary);">
+            <h2>📌 Hierarquia de Categorias (Visão Padrão)</h2>
+            <p style="color: var(--text-muted); font-size: 0.88rem; margin: 8px 0 16px 0;">
+                Defina a prioridade/ordem em que as categorias devem aparecer na <strong>Visão Padrão</strong> do Extrato.
+            </p>
+            <div id="listaOrdemCategorias" class="cat-order-list"></div>
+            <div style="margin-top: 16px; display: flex; gap: 10px;">
+                <button onclick="restaurarOrdemCategoriasPadrao()" class="btn-danger" style="font-size: 0.8rem; padding: 8px 14px;">🔄 Restaurar Ordem Padrão Original</button>
+            </div>
+        </div>
+
         <div class="card" style="margin-bottom: 24px; border-top: 3px solid var(--primary);">
             <h2>☁️ Sincronização Automática via JSONBin.io</h2>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin: 10px 0 20px 0;">
@@ -954,11 +977,20 @@
         let categoriasReceita = JSON.parse(localStorage.getItem('finanpro_cats_rec')) || ["Avó", "Bolsa", "Diversos", "Mãe", "Plantões"];
         let categoriasDespesa = JSON.parse(localStorage.getItem('finanpro_cats_desp')) || ["Aluguel", "Assinaturas", "Amazon-Víctor", "Amazon-Mãe/Avó", "Academia", "Cabelo", "Carro", "Comida/Ifood", "Doações", "Energia", "Farmácia", "Lazer", "Lavanderia", "Outros", "Presentes", "Psicóloga", "Uber/Transporte", "Roupa", "Mercado", "Viagem", "Investimentos"];
 
+        // HIERARQUIA DE CATEGORIAS PARA A VISÃO PADRÃO
+        const baselineCategoriasOrdem = [
+            // Receitas primeiro
+            "Bolsa", "Mãe", "Avó", "Outros", "Diversos", "Plantões",
+            // Despesas
+            "Aluguel", "Lavanderia", "Assinaturas", "Amazon-Víctor", "Amazon-Mãe/Avó", "Academia", "Cabelo", "Carro", "Comida/Ifood", "Doações", "Energia", "Farmácia", "Lazer", "Presentes", "Psicóloga", "Uber/Transporte", "Roupa", "Mercado", "Viagem", "Investimentos"
+        ];
+        let ordemCategoriasPersonalizada = JSON.parse(localStorage.getItem('finanpro_ordem_categorias')) || [...baselineCategoriasOrdem];
+
         let drillDownFiltro = null; 
         let idEditando = null; 
         let categoriaFocoEntradas = null; 
         let categoriaFocoGastos = null;   
-        let modoExibicaoExtrato = 'cards';
+        let modoExibicaoExtrato = 'visaoPadrao';
 
         let sortExtratoField = null;
         let sortExtratoDir = 'asc';
@@ -1026,6 +1058,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             carregarConfigJsonBinUI();
             itens = await carregarDados();
+            sincronizarCategoriasOrdem();
             inicializarAnos();
             
             // Inicia e restaura Drag & Drop para Dashboard
@@ -1047,7 +1080,23 @@
             renderizarTudo();
         });
 
-        // ==================== LÓGICA DE DRAG & DROP DE CARDS ====================
+        // Garantir que todas as categorias cadastradas estejam na lista de hierarquia
+        function sincronizarCategoriasOrdem() {
+            const todasCategorias = [...new Set([...categoriasReceita, ...categoriasDespesa])];
+            todasCategorias.forEach(cat => {
+                if (!ordemCategoriasPersonalizada.includes(cat)) {
+                    ordemCategoriasPersonalizada.push(cat);
+                }
+            });
+            localStorage.setItem('finanpro_ordem_categorias', JSON.stringify(ordemCategoriasPersonalizada));
+        }
+
+        function getOrdemCategoriaIndex(catNome) {
+            let idx = ordemCategoriasPersonalizada.indexOf(catNome);
+            return idx !== -1 ? idx : 999;
+        }
+
+        // ================= LÓGICA DE DRAG & DROP DE CARDS =================
         function configurarDragAndDropGrid(gridId, storageKey) {
             const grid = document.getElementById(gridId);
             if (!grid) return;
@@ -1106,6 +1155,10 @@
 
         function alterarModoExtrato(modo) {
             modoExibicaoExtrato = modo;
+            if (modo === 'visaoPadrao') {
+                sortExtratoField = null; // Reseta ordenação por coluna para aplicar a ordem da hierarquia de categorias
+            }
+            document.getElementById('btnModoVisaoPadrao').classList.toggle('active', modo === 'visaoPadrao');
             document.getElementById('btnModoCards').classList.toggle('active', modo === 'cards');
             document.getElementById('btnModoTabela').classList.toggle('active', modo === 'tabela');
             document.getElementById('btnModoCategorias').classList.toggle('active', modo === 'categorias');
@@ -1346,23 +1399,86 @@
         function renderizarConfigCategorias() {
             document.getElementById('listaCatReceita').innerHTML = categoriasReceita.map(cat => `<div class="cat-chip">${cat} <button onclick="excluirCategoria('${cat}', 'receita')">✖</button></div>`).join('');
             document.getElementById('listaCatDespesa').innerHTML = categoriasDespesa.map(cat => { const estilo = cat === 'Investimentos' ? 'border-color: var(--pix-color); color: var(--pix-color); background: rgba(6, 182, 212, 0.1);' : ''; return `<div class="cat-chip" style="${estilo}">${cat} <button onclick="excluirCategoria('${cat}', 'despesa')">✖</button></div>`; }).join('');
-            atualizarCategoriasNoFormulario(); atualizarSelectCategoriasFiltro();
+            
+            renderizarOrdemCategoriasConfig();
+            atualizarCategoriasNoFormulario(); 
+            atualizarSelectCategoriasFiltro();
+        }
+
+        // Renderiza o gerenciador de hierarquia das categorias na aba Config
+        function renderizarOrdemCategoriasConfig() {
+            const container = document.getElementById('listaOrdemCategorias');
+            if (!container) return;
+            sincronizarCategoriasOrdem();
+            
+            let html = '';
+            ordemCategoriasPersonalizada.forEach((cat, index) => {
+                const isReceita = categoriasReceita.includes(cat);
+                const tagCor = isReceita ? 'color: var(--success);' : 'color: var(--danger);';
+                const tagTipo = isReceita ? '📈 Entrada' : '📉 Gasto';
+                
+                html += `
+                    <div class="cat-order-item">
+                        <span style="font-weight: 600;">
+                            <span style="color: var(--text-muted); font-size: 0.75rem; margin-right: 8px;">#${index + 1}</span>
+                            ${cat} <small style="${tagCor} margin-left: 6px;">(${tagTipo})</small>
+                        </span>
+                        <div class="cat-order-btns">
+                            <button onclick="moverCategoriaOrdem(${index}, -1)" class="btn-move" title="Mover para cima">⬆️</button>
+                            <button onclick="moverCategoriaOrdem(${index}, 1)" class="btn-move" title="Mover para baixo">⬇️</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function moverCategoriaOrdem(index, direcao) {
+            let novoIndex = index + direcao;
+            if (novoIndex < 0 || novoIndex >= ordemCategoriasPersonalizada.length) return;
+            let temp = ordemCategoriasPersonalizada[index];
+            ordemCategoriasPersonalizada[index] = ordemCategoriasPersonalizada[novoIndex];
+            ordemCategoriasPersonalizada[novoIndex] = temp;
+            localStorage.setItem('finanpro_ordem_categorias', JSON.stringify(ordemCategoriasPersonalizada));
+            renderizarOrdemCategoriasConfig();
+            if (modoExibicaoExtrato === 'visaoPadrao') renderizarTudo();
+        }
+
+        function restaurarOrdemCategoriasPadrao() {
+            if (confirm("Deseja restaurar a ordem padrão original das categorias?")) {
+                ordemCategoriasPersonalizada = [...baselineCategoriasOrdem];
+                sincronizarCategoriasOrdem();
+                renderizarOrdemCategoriasConfig();
+                if (modoExibicaoExtrato === 'visaoPadrao') renderizarTudo();
+            }
         }
 
         function adicionarCategoria(e, tipo) {
             e.preventDefault(); const input = document.getElementById(tipo === 'receita' ? 'inputCatReceita' : 'inputCatDespesa'); const val = input.value.trim();
-            if (val && !(tipo === 'receita' ? categoriasReceita : categoriasDespesa).includes(val)) { if (tipo === 'receita') { categoriasReceita.push(val); localStorage.setItem('finanpro_cats_rec', JSON.stringify(categoriasReceita)); } else { categoriasDespesa.push(val); localStorage.setItem('finanpro_cats_desp', JSON.stringify(categoriasDespesa)); } input.value = ''; }
-            renderizarConfigCategorias(); renderizarTudo();
+            if (val && !(tipo === 'receita' ? categoriasReceita : categoriasDespesa).includes(val)) { 
+                if (tipo === 'receita') { categoriasReceita.push(val); localStorage.setItem('finanpro_cats_rec', JSON.stringify(categoriasReceita)); } 
+                else { categoriasDespesa.push(val); localStorage.setItem('finanpro_cats_desp', JSON.stringify(categoriasDespesa)); } 
+                input.value = ''; 
+            }
+            sincronizarCategoriasOrdem();
+            renderizarConfigCategorias(); 
+            renderizarTudo();
         }
 
         function excluirCategoria(cat, tipo) {
             let lista = tipo === 'receita' ? categoriasReceita : categoriasDespesa; if (lista.length <= 1) return alert("Mantenha ao menos uma categoria.");
-            if (confirm(`Remover "${cat}"?`)) { if (tipo === 'receita') { categoriasReceita = categoriasReceita.filter(c => c !== cat); localStorage.setItem('finanpro_cats_rec', JSON.stringify(categoriasReceita)); } else { categoriasDespesa = categoriasDespesa.filter(c => c !== cat); localStorage.setItem('finanpro_cats_desp', JSON.stringify(categoriasDespesa)); } renderizarConfigCategorias(); renderizarTudo(); }
+            if (confirm(`Remover "${cat}"?`)) { 
+                if (tipo === 'receita') { categoriasReceita = categoriasReceita.filter(c => c !== cat); localStorage.setItem('finanpro_cats_rec', JSON.stringify(categoriasReceita)); } 
+                else { categoriasDespesa = categoriasDespesa.filter(c => c !== cat); localStorage.setItem('finanpro_cats_desp', JSON.stringify(categoriasDespesa)); } 
+                ordemCategoriasPersonalizada = ordemCategoriasPersonalizada.filter(c => c !== cat);
+                localStorage.setItem('finanpro_ordem_categorias', JSON.stringify(ordemCategoriasPersonalizada));
+                renderizarConfigCategorias(); 
+                renderizarTudo(); 
+            }
         }
 
         async function salvarStorageAsync() { await salvarDados(itens); renderizarTudo(); }
 
-        // ================= NOVO SISTEMA DE CRIAÇÃO E EDIÇÃO COM PARCELAS AVANÇADAS =================
         async function salvarItemForm(e) {
             e.preventDefault(); 
             const descBase = document.getElementById('desc').value.trim(); 
@@ -1374,7 +1490,6 @@
             const mesInicial = parseInt(document.getElementById('mes').value); 
             const anoInicial = parseInt(document.getElementById('anoInput').value);
 
-            // Dados de Parcelamento Avançado
             const qtdTotalParcelas = (tipo === 'despesa' && pagamento === 'Cartão' && !isRecorrente) ? parseInt(document.getElementById('parcelas').value) : 1;
             const parcelaInicial = (qtdTotalParcelas > 1) ? (parseInt(document.getElementById('parcelaInicial').value) || 1) : 1;
             const temValorDiferente = (qtdTotalParcelas > 1) && document.getElementById('chkValorDiferente').checked;
@@ -1385,7 +1500,6 @@
                 return;
             }
 
-            // Quantidade real de itens a serem inseridos na planilha
             let numRepeticoes = 1;
             if (isRecorrente) {
                 numRepeticoes = (12 - mesInicial + 1);
@@ -1394,11 +1508,9 @@
             }
 
             if (idEditando !== null) {
-                // EDIÇÃO DE ITEM EXISTENTE
                 const index = itens.findIndex(i => Number(i.id) === Number(idEditando));
                 if (index !== -1) {
                     const itemExistente = itens[index];
-                    
                     if (numRepeticoes === 1 && !isRecorrente) {
                         itens[index] = {
                             ...itemExistente,
@@ -1418,77 +1530,51 @@
                         for (let i = 0; i < numRepeticoes; i++) {
                             let mesCalc = mesInicial + i, anoCalc = anoInicial;
                             while (mesCalc > 12) { mesCalc -= 12; anoCalc += 1; }
-                            
                             let descFinal = descBase;
                             let valorItem = valorInformado;
 
                             if (!isRecorrente && qtdTotalParcelas > 1) {
                                 let numParcAtual = parcelaInicial + i;
                                 descFinal = `${descBase} (${String(numParcAtual).padStart(2, '0')}/${String(qtdTotalParcelas).padStart(2, '0')})`;
-                                if (numParcAtual === 1 && temValorDiferente) {
-                                    valorItem = valor1aParcela;
-                                }
+                                if (numParcAtual === 1 && temValorDiferente) valorItem = valor1aParcela;
                             } else if (isRecorrente) {
                                 descFinal = `${descBase} (Recorrente)`;
                             }
                             
                             let itemId = (i === 0) ? Number(idEditando) : (Date.now() + (i * 10) + Math.floor(Math.random() * 5));
-                            
                             const novoObj = {
-                                id: itemId,
-                                grupoId: grupoId,
-                                desc: descFinal,
-                                valor: valorItem,
-                                tipo: tipo,
-                                categoria: categoria,
-                                pagamento: pagamento,
-                                mes: String(mesCalc).padStart(2, '0'),
-                                ano: String(anoCalc),
-                                status: 'efetivado'
+                                id: itemId, grupoId: grupoId, desc: descFinal, valor: valorItem,
+                                tipo: tipo, categoria: categoria, pagamento: pagamento,
+                                mes: String(mesCalc).padStart(2, '0'), ano: String(anoCalc), status: 'efetivado'
                             };
-                            
-                            if (i === 0) {
-                                itens.splice(index, 0, novoObj);
-                            } else {
-                                itens.push(novoObj);
-                            }
+                            if (i === 0) itens.splice(index, 0, novoObj);
+                            else itens.push(novoObj);
                         }
                     }
                 }
             } else {
-                // CRIAÇÃO DE NOVOS ITENS
                 let grupoId = 'grupo_' + Date.now() + '_' + Math.random();
                 const baseTimestamp = Date.now();
                 
                 for (let i = 0; i < numRepeticoes; i++) { 
                     let mesCalc = mesInicial + i, anoCalc = anoInicial; 
                     while (mesCalc > 12) { mesCalc -= 12; anoCalc += 1; } 
-                    
                     let descFinal = descBase; 
                     let valorItem = valorInformado;
 
                     if (!isRecorrente && qtdTotalParcelas > 1) {
                         let numParcAtual = parcelaInicial + i;
                         descFinal = `${descBase} (${String(numParcAtual).padStart(2, '0')}/${String(qtdTotalParcelas).padStart(2, '0')})`;
-                        if (numParcAtual === 1 && temValorDiferente) {
-                            valorItem = valor1aParcela;
-                        }
+                        if (numParcAtual === 1 && temValorDiferente) valorItem = valor1aParcela;
                     } else if (isRecorrente) {
                         descFinal = `${descBase} (Recorrente)`;
                     }
                     
                     let novoId = baseTimestamp + (i * 10) + Math.floor(Math.random() * 5);
                     itens.push({ 
-                        id: novoId, 
-                        grupoId: (qtdTotalParcelas > 1 || isRecorrente) ? grupoId : null, 
-                        desc: descFinal, 
-                        valor: valorItem, 
-                        tipo: tipo, 
-                        categoria: categoria, 
-                        pagamento: pagamento, 
-                        mes: String(mesCalc).padStart(2, '0'), 
-                        ano: String(anoCalc), 
-                        status: 'efetivado' 
+                        id: novoId, grupoId: (qtdTotalParcelas > 1 || isRecorrente) ? grupoId : null, 
+                        desc: descFinal, valor: valorItem, tipo: tipo, categoria: categoria, 
+                        pagamento: pagamento, mes: String(mesCalc).padStart(2, '0'), ano: String(anoCalc), status: 'efetivado' 
                     });
                 }
             } 
@@ -1503,7 +1589,6 @@
             const item = itens.find(i => Number(i.id) === Number(id)); if (!item) return; idEditando = item.id;
             document.getElementById('tituloFormulario').innerHTML = "<span class=\"drag-handle\" title=\"Arraste para mover\">⣿</span> ✏️ Editar Lançamento"; document.getElementById('btnSalvarForm').textContent = "Salvar Alterações"; document.getElementById('btnSalvarForm').className = "btn-success"; document.getElementById('btnCancelarEdicao').style.display = "block";
             
-            // Limpa sufixos do nome
             document.getElementById('desc').value = item.desc.replace(/ \(\d+\/\d+\)/, '').replace(/ \(Recorrente\)/, ''); 
             document.getElementById('valor').value = item.valor; 
             document.getElementById('tipo').value = item.tipo; 
@@ -1537,7 +1622,6 @@
             document.getElementById('valor').value = ''; 
             document.getElementById('recorrente').checked = false; 
             
-            // Reseta parcelamento avançado
             document.getElementById('parcelas').value = "1";
             document.getElementById('parcelaInicial').value = "1";
             document.getElementById('chkValorDiferente').checked = false;
@@ -1556,7 +1640,6 @@
         function restaurarBackup(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async function(e) { try { const dadosRestaurados = JSON.parse(e.target.result); if (Array.isArray(dadosRestaurados)) { itens = dadosRestaurados; await salvarStorageAsync(); alert("Backup restaurado!"); } else alert("Arquivo inválido."); } catch (err) { alert("Erro ao ler arquivo."); } }; reader.readAsText(file); }
         async function limparTudo() { if (confirm("Tem certeza que deseja apagar TODOS os lançamentos?")) { itens = []; await salvarStorageAsync(); } }
 
-        // Função de hierarquia para ordenação por Tipo/Fluxo na coluna E
         function getTipoRank(item) {
             if (item.tipo === 'receita') return 1;
             const cat = (item.categoria || '').toLowerCase();
@@ -1585,7 +1668,6 @@
             if (columnFilters.valorMin !== '') { const vMin = parseFloat(columnFilters.valorMin); if(!isNaN(vMin)) { dadosExtrato = dadosExtrato.filter(i => i.valor >= vMin); filtrosAtivosTxt.push(`Mín: R$${vMin}`); } }
             if (columnFilters.valorMax !== '') { const vMax = parseFloat(columnFilters.valorMax); if(!isNaN(vMax)) { dadosExtrato = dadosExtrato.filter(i => i.valor <= vMax); filtrosAtivosTxt.push(`Máx: R$${vMax}`); } }
 
-            // Atualiza barra indicadora de filtros ativos
             const painelFiltros = document.getElementById('painelFiltrosAtivos');
             if (filtrosAtivosTxt.length > 0) {
                 painelFiltros.style.display = 'flex';
@@ -1594,31 +1676,34 @@
                 painelFiltros.style.display = 'none';
             }
 
-            // ORDENAÇÃO PELOS TÍTULOS DE COLUNAS DO EXTRATO OU MANUTENÇÃO DA POSIÇÃO ORIGINAL
-            if (sortExtratoField) {
+            // ORDENAÇÃO: VISÃO PADRÃO (HIERARQUIA DE CATEGORIAS) OU PELAS COLUNAS
+            if (modoExibicaoExtrato === 'visaoPadrao' && !sortExtratoField) {
+                dadosExtrato.sort((a, b) => {
+                    let idxA = getOrdemCategoriaIndex(a.categoria);
+                    let idxB = getOrdemCategoriaIndex(b.categoria);
+                    if (idxA !== idxB) return idxA - idxB;
+                    // Se estiver na mesma categoria, ordena por tipo (receita primeiro) e valor/nome
+                    if (a.tipo !== b.tipo) return a.tipo === 'receita' ? -1 : 1;
+                    return a.desc.localeCompare(b.desc, 'pt-BR');
+                });
+            } else if (sortExtratoField) {
                 dadosExtrato.sort((a, b) => {
                     if (sortExtratoField === 'tipo') {
                         const rankA = getTipoRank(a);
                         const rankB = getTipoRank(b);
-                        if (rankA !== rankB) {
-                            return sortExtratoDir === 'asc' ? rankA - rankB : rankB - rankA;
-                        }
+                        if (rankA !== rankB) return sortExtratoDir === 'asc' ? rankA - rankB : rankB - rankA;
                         return 0;
                     }
                     if (sortExtratoField === 'data') {
                         const dateA = (parseInt(a.ano) || 0) * 100 + (parseInt(a.mes) || 0);
                         const dateB = (parseInt(b.ano) || 0) * 100 + (parseInt(b.mes) || 0);
-                        if (dateA !== dateB) {
-                            return sortExtratoDir === 'asc' ? dateA - dateB : dateB - dateA;
-                        }
+                        if (dateA !== dateB) return sortExtratoDir === 'asc' ? dateA - dateB : dateB - dateA;
                         return 0;
                     }
                     let valA = a[sortExtratoField], valB = b[sortExtratoField];
                     if (sortExtratoField === 'id') return sortExtratoDir === 'asc' ? Number(a.id) - Number(b.id) : Number(b.id) - Number(a.id);
                     if (sortExtratoField === 'valor') {
-                        if (a.valor !== b.valor) {
-                            return sortExtratoDir === 'asc' ? a.valor - b.valor : b.valor - a.valor;
-                        }
+                        if (a.valor !== b.valor) return sortExtratoDir === 'asc' ? a.valor - b.valor : b.valor - a.valor;
                         return 0;
                     }
                     if (typeof valA === 'string') {
@@ -1681,7 +1766,6 @@
             });
         }
 
-        // FUNÇÃO DE RENDERIZAR CABEÇALHO INTERATIVO COM FILTRO E ORDENAÇÃO
         function getThInterativo(campo, titulo, alinhamento = '') {
             const isSorted = sortExtratoField === campo;
             const seta = isSorted ? (sortExtratoDir === 'asc' ? ' 🔼' : ' 🔽') : '';
@@ -1788,7 +1872,7 @@
 
             if (dadosExtrato.length === 0) { container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 32px;">Nenhum lançamento encontrado para esta seleção.</div>`; return; }
 
-            if (modoExibicaoExtrato === 'analitica') {
+            if (modoExibicaoExtrato === 'analitica' || modoExibicaoExtrato === 'visaoPadrao') {
                 renderPlanilhaAnalitica(dadosExtrato);
                 configurarDragAndDropExtrato();
                 return;
@@ -1859,7 +1943,6 @@
             </div>`;
         }
 
-        // Drag and Drop para itens manuais do Extrato
         function configurarDragAndDropExtrato() {
             const container = document.getElementById('containerExtrato');
             if(!container) return;
